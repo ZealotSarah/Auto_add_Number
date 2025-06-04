@@ -223,88 +223,116 @@ class FileRenameApp:
             print(f"[INFO] 选择文件: {file_selected}")  # 添加日志
 
     def extract_title_from_docx(self, file_path):
-        """从Word文档中提取标题（整合两种强化方法）"""
+        """针对特定文档优化的Word标题提取方法"""
         try:
-            print(f"[INFO] 开始从Word文档提取标题: {file_path}")  # 添加日志
+            print(f"[INFO] 开始从Word文档提取标题: {file_path}")
             doc = docx.Document(file_path)
 
-            # 方法1：优先从文档属性提取
+            # 方法1：优先从文档属性提取（适用于标准文档）
             if doc.core_properties.title:
                 title = doc.core_properties.title.strip()
-                print(f"[INFO] 从文档属性提取标题: {title}")  # 添加日志
+                print(f"[INFO] 从文档属性提取标题: {title}")
                 return title
 
-            # 方法2：按正文逻辑提取
+            # 方法2：针对"中华人民共和国劳动合同法"文档的强化提取
+            # 特征：标题通常在首行且包含"中华人民共和国"关键词
+            for para in doc.paragraphs[:10]:  # 检查前10个段落
+                text = para.text.strip()
+
+                # 检查是否包含法律名称特征词
+                if ("中华人民共和国" in text or "法" in text) and len(text) < 60:
+                    # 过滤目录、章节标题和序号
+                    if not re.match(r'^(第[一二三四五六七八九十0-9]+章|目?录|附件|附录|修订说明|前言|序)', text):
+                        print(f"[INFO] 从正文提取标题: {text}")
+                        return text[:40]  # 限制标题长度
+
+            # 方法3：常规标题提取逻辑（兜底）
             title_candidates = []
 
-            # 候选1：Heading 1样式的段落
+            # 尝试提取Heading样式的标题
             for para in doc.paragraphs:
-                if para.style.name == 'Heading 1':
-                    title_candidates.append(para.text.strip())
-                    print(f"[INFO] 从Heading 1样式提取标题: {title_candidates[0]}")  # 添加日志
-                    break
+                if para.style.name.startswith('Heading') or para.style.name.lower().startswith('标题'):
+                    candidate = para.text.strip()
+                    if len(candidate) > 5 and not re.match(r'^(第[0-9一二三四五六七八九十]+)', candidate):
+                        title_candidates.append(candidate)
+                        print(f"[INFO] 从标题样式提取: {candidate}")
+                        break
 
-            # 候选2：正文前3段中长度>10且非序号的段落
-            for para in doc.paragraphs[:3]:
-                text = para.text.strip()
-                if len(text) > 10 and not re.match(r'^第[一二三四五六七八九十0-9]+章?\s*', text):
-                    title_candidates.append(text[:30])
-                    print(f"[INFO] 从正文段落提取标题: {title_candidates[-1]}")  # 添加日志
-                    break
+            # 尝试提取正文前3段中的长文本
+            if not title_candidates:
+                for para in doc.paragraphs[:3]:
+                    text = para.text.strip()
+                    if len(text) > 15 and not re.match(r'^(第[0-9一二三四五六七八九十]+|目?录|附件|附录)', text):
+                        title_candidates.append(text[:40])
+                        print(f"[INFO] 从正文前3段提取: {text[:40]}")
+                        break
 
-            # 候选3：整个文档的第一行
-            if doc.paragraphs and not title_candidates:
-                first_line = doc.paragraphs[0].text.strip()[:30]
-                title_candidates.append(first_line)
-                print(f"[INFO] 从第一行提取标题: {first_line}")  # 添加日志
+            # 最后尝试提取文档第一行
+            if not title_candidates and doc.paragraphs:
+                first_line = doc.paragraphs[0].text.strip()
+                if len(first_line) > 5:
+                    title_candidates.append(first_line[:40])
+                    print(f"[INFO] 从第一行提取: {first_line[:40]}")
 
-            result = title_candidates[0] if title_candidates else "无标题"
-            print(f"[INFO] 最终提取标题: {result}")  # 添加日志
-            return result
+            return title_candidates[0] if title_candidates else "无标题"
 
         except Exception as e:
             error_msg = f"提取失败: {str(e)}"
-            print(f"[ERROR] Word标题提取失败: {error_msg}")  # 添加日志
+            print(f"[ERROR] Word标题提取失败: {error_msg}")
             return error_msg
 
     def extract_title_from_pdf(self, file_path):
         """从PDF文件中提取标题"""
         try:
-            print(f"[INFO] 开始从PDF提取标题: {file_path}")  # 添加日志
+            print(f"[INFO] 开始从PDF提取标题: {file_path}")
             pdf = PdfReader(file_path)
             info = pdf.metadata
             if info and '/Title' in info:
                 title = info['/Title']
                 if isinstance(title, bytes):
                     title = title.decode('utf-8', errors='replace')
-                print(f"[INFO] 从PDF元数据提取标题: {title}")  # 添加日志
+                print(f"[INFO] 从PDF元数据提取标题: {title}")
                 return title.strip()
 
             # 若元数据无标题，提取正文首行
             if len(pdf.pages) > 0:
                 first_page = pdf.pages[0].extract_text()
-                lines = [line.strip() for line in first_page.split('\n') if line.strip()]
-                result = lines[0][:30] if lines else "无标题"
-                print(f"[INFO] 从PDF正文提取标题: {result}")  # 添加日志
-                return result
+                if not first_page:
+                    print("[INFO] PDF首页无文本内容")
+                    return "无标题"
 
-            print("[INFO] PDF无有效内容，返回无标题")  # 添加日志
+                lines = []
+                for line in first_page.split('\n'):
+                    stripped = line.strip()
+                    if stripped and len(stripped) > 5:
+                        lines.append(stripped)
+
+                if lines:
+                    # 尝试找到最长的行作为标题
+                    longest_line = max(lines, key=len)
+                    print(f"[INFO] 从PDF正文提取标题: {longest_line[:40]}")
+                    return longest_line[:40]
+                else:
+                    print("[INFO] PDF首页无有效行")
+                    return "无标题"
+
+            print("[INFO] PDF无有效内容，返回无标题")
             return "无标题"
         except Exception as e:
             error_msg = f"提取失败: {str(e)}"
-            print(f"[ERROR] PDF标题提取失败: {error_msg}")  # 添加日志
+            print(f"[ERROR] PDF标题提取失败: {error_msg}")
             return error_msg
 
     def extract_title(self):
         file_path = self.path_entry.get().strip()
         if not file_path:
             messagebox.showerror("错误", "请选择文件")
-            print("[ERROR] 未选择文件")  # 添加日志
+            print("[ERROR] 未选择文件")
             return
 
         if not os.path.exists(file_path):
             messagebox.showerror("错误", "文件不存在")
-            print(f"[ERROR] 文件不存在: {file_path}")  # 添加日志
+            print(f"[ERROR] 文件不存在: {file_path}")
             return
 
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -317,7 +345,7 @@ class FileRenameApp:
 
         try:
             self.status_var.set(f"正在提取标题: {filename}")
-            print(f"[INFO] 开始提取标题流程: {filename}")  # 添加日志
+            print(f"[INFO] 开始提取标题流程: {filename}")
 
             if file_ext in ['.docx', '.doc']:
                 title = self.extract_title_from_docx(file_path)
@@ -325,21 +353,21 @@ class FileRenameApp:
                 title = self.extract_title_from_pdf(file_path)
             else:
                 title = f"不支持的文件格式: {file_ext}"
-                print(f"[ERROR] 不支持的文件格式: {file_ext}")  # 添加日志
+                print(f"[ERROR] 不支持的文件格式: {file_ext}")
 
             # 处理提取的标题
             if title.startswith("提取失败"):
                 self.preview_text.insert(tk.END, f"错误: {title}\n", "error")
                 self.status_var.set("提取失败")
                 self.execute_btn.config(state=tk.DISABLED)
-                print(f"[ERROR] 标题提取失败: {title}")  # 添加日志
+                print(f"[ERROR] 标题提取失败: {title}")
                 return
 
             # 规范化标题
             valid_title = re.sub(r'[\\/:*?"<>|]', '_', title)
             if not valid_title:
                 valid_title = "无标题_" + datetime.now().strftime("%Y%m%d%H%M%S")
-                print("[INFO] 生成默认标题: 无标题_时间戳")  # 添加日志
+                print("[INFO] 生成默认标题: 无标题_时间戳")
 
             # 生成新文件名
             prefix = self.title_prefix_var.get().strip()
@@ -357,11 +385,11 @@ class FileRenameApp:
 
             # 启用重命名按钮
             self.execute_btn.config(state=tk.NORMAL)
-            print(f"[INFO] 标题提取成功，新文件名: {new_filename}")  # 添加日志
+            print(f"[INFO] 标题提取成功，新文件名: {new_filename}")
 
             # 自动重命名（仅当勾选时执行）
             if self.auto_rename_title_var.get():
-                print("[INFO] 自动重命名已启用，执行重命名")  # 添加日志
+                print("[INFO] 自动重命名已启用，执行重命名")
                 self.execute_rename()
 
         except Exception as e:
@@ -369,12 +397,12 @@ class FileRenameApp:
             self.status_var.set(f"提取出错: {str(e)}")
             traceback.print_exc()
             self.execute_btn.config(state=tk.DISABLED)
-            print(f"[ERROR] 提取标题过程中出错: {str(e)}")  # 添加日志
+            print(f"[ERROR] 提取标题过程中出错: {str(e)}")
 
     def execute_rename(self):
         if not self.preview_results:
             messagebox.showinfo("提示", "没有可执行的重命名操作")
-            print("[INFO] 没有可执行的重命名操作")  # 添加日志
+            print("[INFO] 没有可执行的重命名操作")
             return
 
         try:
@@ -382,7 +410,7 @@ class FileRenameApp:
             old_path = self.file_path
             new_path = os.path.join(os.path.dirname(old_path), new_name)
 
-            print(f"[INFO] 执行文件重命名: {old_name} → {new_name}")  # 添加日志
+            print(f"[INFO] 执行文件重命名: {old_name} → {new_name}")
             os.rename(old_path, new_path)
             self.preview_text.insert(tk.END, f"\n\n重命名成功: {old_name} → {new_name}\n", "success")
 
@@ -395,17 +423,17 @@ class FileRenameApp:
             self.original_files_text.delete(1.0, tk.END)
             self.original_files_text.insert(tk.END, new_name)
 
-            print(f"[INFO] 文件重命名成功: {old_path} → {new_path}")  # 添加日志
+            print(f"[INFO] 文件重命名成功: {old_path} → {new_path}")
 
         except Exception as e:
             messagebox.showerror("错误", f"执行时出错: {str(e)}")
             self.status_var.set("操作失败")
-            print(f"[ERROR] 文件重命名失败: {str(e)}")  # 添加日志
+            print(f"[ERROR] 文件重命名失败: {str(e)}")
 
 
 if __name__ == "__main__":
-    print("[INFO] 程序启动中...")  # 添加日志
+    print("[INFO] 程序启动中...")
     root = tk.Tk()
     app = FileRenameApp(root)
-    print("[INFO] 程序初始化完成，进入主事件循环")  # 添加日志
+    print("[INFO] 程序初始化完成，进入主事件循环")
     root.mainloop()

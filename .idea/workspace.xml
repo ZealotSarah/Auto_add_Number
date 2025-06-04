@@ -4,7 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="代码强化了 Word 文档的标题提取逻辑，优先从文档属性提取，若失败则依次尝试标题样式、正文段落等策略，确保能提取到文档首行作为标题。">
+    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="1、恢复日志输出&#10;在关键函数和操作点添加了详细的日志输出，包括：&#10;（1）程序启动和初始化&#10;（2）模式切换&#10;（3）文件选择&#10;（4）标题提取过程（包括从 Word/PDF 提取的细节）&#10;（5）重命名操作&#10;（6）错误处理&#10;2、日志格式优化&#10;使用[INFO]和[ERROR]前缀区分不同类型的日志，便于调试时快速定位问题。&#10;3、保持原有功能不变&#10;修复了自动重命名的问题（默认关闭），同时保留了所有原有功能。">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -100,7 +101,7 @@
       <workItem from="1748963919644" duration="183000" />
       <workItem from="1748964120142" duration="859000" />
       <workItem from="1748998523280" duration="220000" />
-      <workItem from="1748998752846" duration="4553000" />
+      <workItem from="1748998752846" duration="5350000" />
     </task>
     <task id="LOCAL-00001" summary="1、双模式支持：&#10;新增 &quot;浏览文件&quot; 按钮，支持选择单个文件&#10;界面顶部显示当前模式（批量处理 / 单个文件）&#10;通过is_single_file标志区分两种模式&#10;2、界面调整：&#10;将 &quot;文件夹路径&quot; 改为 &quot;文件 / 文件夹路径&quot;&#10;添加 &quot;浏览文件&quot; 按钮，与 &quot;浏览文件夹&quot; 并列&#10;增加模式指示器，显示当前操作模式&#10;3、逻辑修改：&#10;preview_rename和execute_rename方法同时支持文件和文件夹">
       <option name="closed" value="true" />
@@ -142,7 +143,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749003186513</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="1、恢复日志输出&#10;在关键函数和操作点添加了详细的日志输出，包括：&#10;（1）程序启动和初始化&#10;（2）模式切换&#10;（3）文件选择&#10;（4）标题提取过程（包括从 Word/PDF 提取的细节）&#10;（5）重命名操作&#10;（6）错误处理&#10;2、日志格式优化&#10;使用[INFO]和[ERROR]前缀区分不同类型的日志，便于调试时快速定位问题。&#10;3、保持原有功能不变&#10;修复了自动重命名的问题（默认关闭），同时保留了所有原有功能。">
+      <option name="closed" value="true" />
+      <created>1749003807424</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1749003807424</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -164,7 +173,8 @@
     <MESSAGE value="1、文件选择：&#10;支持选择 Word（.docx/.doc）和 PDF（.pdf）文件&#10;友好的文件类型过滤，方便选择目标文件&#10;2、标题提取：&#10;Word 文件：优先提取标题样式的段落，若无则使用第一段内容&#10;PDF 文件：优先提取元数据中的 Title 字段，若无则从内容中提取&#10;3、重命名功能：&#10;自动过滤文件名中的非法字符&#10;支持添加前缀和后缀&#10;可选择自动重命名或手动执行&#10;4、界面设计：&#10;清晰的结果显示区域，区分原始文件名、提取标题和新文件名&#10;状态提示栏实时显示操作进度&#10;错误处理和友好的提示信息" />
     <MESSAGE value="整合了三种重命名模式：&#10;&#10;1、批量重命名模式：&#10;选择文件夹，对其中所有文件按规则重命名&#10;支持保留年份前缀、覆盖已有序号等选项&#10;提供多种命名格式预设&#10;2、单个文件重命名模式：&#10;选择单个文件进行重命名&#10;与批量重命名使用相同的格式规则&#10;3、按文件标题重命名模式：&#10;专门处理 Word 和 PDF 文件&#10;从文件内容中提取标题作为新文件名&#10;支持添加前缀和后缀" />
     <MESSAGE value="代码强化了 Word 文档的标题提取逻辑，优先从文档属性提取，若失败则依次尝试标题样式、正文段落等策略，确保能提取到文档首行作为标题。" />
-    <option name="LAST_COMMIT_MESSAGE" value="代码强化了 Word 文档的标题提取逻辑，优先从文档属性提取，若失败则依次尝试标题样式、正文段落等策略，确保能提取到文档首行作为标题。" />
+    <MESSAGE value="1、恢复日志输出&#10;在关键函数和操作点添加了详细的日志输出，包括：&#10;（1）程序启动和初始化&#10;（2）模式切换&#10;（3）文件选择&#10;（4）标题提取过程（包括从 Word/PDF 提取的细节）&#10;（5）重命名操作&#10;（6）错误处理&#10;2、日志格式优化&#10;使用[INFO]和[ERROR]前缀区分不同类型的日志，便于调试时快速定位问题。&#10;3、保持原有功能不变&#10;修复了自动重命名的问题（默认关闭），同时保留了所有原有功能。" />
+    <option name="LAST_COMMIT_MESSAGE" value="1、恢复日志输出&#10;在关键函数和操作点添加了详细的日志输出，包括：&#10;（1）程序启动和初始化&#10;（2）模式切换&#10;（3）文件选择&#10;（4）标题提取过程（包括从 Word/PDF 提取的细节）&#10;（5）重命名操作&#10;（6）错误处理&#10;2、日志格式优化&#10;使用[INFO]和[ERROR]前缀区分不同类型的日志，便于调试时快速定位问题。&#10;3、保持原有功能不变&#10;修复了自动重命名的问题（默认关闭），同时保留了所有原有功能。" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1748960914820" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
