@@ -1,6 +1,6 @@
 import os
 import re
-import sys  # 添加sys模块用于处理打包路径
+import sys
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, messagebox, ttk
 from pathlib import Path
@@ -33,7 +33,7 @@ class FileRenameApp:
 
         # 创建界面元素
         self.create_widgets()
-        print("界面组件初始化完成")  # 添加日志
+        print("[INFO] 界面初始化完成")  # 添加日志
 
     def create_widgets(self):
         # 模式选择框架
@@ -80,7 +80,7 @@ class FileRenameApp:
         self.title_options_frame = tk.Frame(self.root, padx=10, pady=5)
         self.title_options_frame.pack(fill=tk.X)
 
-        self.auto_rename_title_var = tk.BooleanVar(value=True)
+        self.auto_rename_title_var = tk.BooleanVar(value=False)  # 默认不自动重命名
         auto_rename_title_check = tk.Checkbutton(self.title_options_frame, text="自动重命名",
                                                  variable=self.auto_rename_title_var, font=self.font)
         auto_rename_title_check.pack(side=tk.LEFT, padx=5)
@@ -91,7 +91,7 @@ class FileRenameApp:
         prefix_entry = tk.Entry(self.title_options_frame, textvariable=self.title_prefix_var, width=10, font=self.font)
         prefix_entry.pack(side=tk.LEFT, padx=5)
 
-        self.title_suffix_var = tk.StringVar(value=".docx")
+        self.title_suffix_var = tk.StringVar(value="")
         suffix_label = tk.Label(self.title_options_frame, text="后缀:", font=self.font)
         suffix_label.pack(side=tk.LEFT, padx=5)
         suffix_entry = tk.Entry(self.title_options_frame, textvariable=self.title_suffix_var, width=10, font=self.font)
@@ -143,10 +143,11 @@ class FileRenameApp:
 
         # 初始化界面
         self.change_mode()
-        print("界面初始化完成")  # 添加日志
+        print("[INFO] 界面组件加载完成")  # 添加日志
 
     def change_mode(self):
         self.current_mode = self.mode_var.get()
+        print(f"[INFO] 切换到{self.current_mode}模式")  # 添加日志
 
         if self.current_mode == "batch":
             self.is_single_file = False
@@ -180,14 +181,17 @@ class FileRenameApp:
         self.preview_text.delete(1.0, tk.END)
         self.execute_btn.config(state=tk.DISABLED)
         self.status_var.set("就绪")
+        print("[INFO] 模式切换完成")  # 添加日志
 
     def browse_folder(self):
+        print("[INFO] 打开文件/文件夹选择对话框")  # 添加日志
         if self.current_mode == "batch":
             folder_selected = filedialog.askdirectory()
             if folder_selected:
                 self.path_entry.delete(0, tk.END)
                 self.path_entry.insert(0, folder_selected)
                 self.status_var.set(f"已选择文件夹: {os.path.basename(folder_selected)}")
+                print(f"[INFO] 选择文件夹: {folder_selected}")  # 添加日志
         else:  # single 或 title 模式
             file_selected = filedialog.askopenfilename(
                 filetypes=[("所有文件", "*.*")]
@@ -196,8 +200,10 @@ class FileRenameApp:
                 self.path_entry.delete(0, tk.END)
                 self.path_entry.insert(0, file_selected)
                 self.status_var.set(f"已选择文件: {os.path.basename(file_selected)}")
+                print(f"[INFO] 选择文件: {file_selected}")  # 添加日志
 
     def browse_file(self):
+        print("[INFO] 打开文件选择对话框")  # 添加日志
         if self.current_mode == "title":
             file_selected = filedialog.askopenfilename(
                 filetypes=[("Word/PDF文件", "*.docx *.doc *.pdf"),
@@ -214,17 +220,18 @@ class FileRenameApp:
             self.path_entry.delete(0, tk.END)
             self.path_entry.insert(0, file_selected)
             self.status_var.set(f"已选择文件: {os.path.basename(file_selected)}")
+            print(f"[INFO] 选择文件: {file_selected}")  # 添加日志
 
     def extract_title_from_docx(self, file_path):
         """从Word文档中提取标题（整合两种强化方法）"""
         try:
-            print(f"开始提取Word标题: {file_path}")  # 添加日志
+            print(f"[INFO] 开始从Word文档提取标题: {file_path}")  # 添加日志
             doc = docx.Document(file_path)
 
             # 方法1：优先从文档属性提取
             if doc.core_properties.title:
                 title = doc.core_properties.title.strip()
-                print(f"从属性提取标题成功: {title}")  # 添加日志
+                print(f"[INFO] 从文档属性提取标题: {title}")  # 添加日志
                 return title
 
             # 方法2：按正文逻辑提取
@@ -234,7 +241,7 @@ class FileRenameApp:
             for para in doc.paragraphs:
                 if para.style.name == 'Heading 1':
                     title_candidates.append(para.text.strip())
-                    print(f"从Heading 1提取标题: {title_candidates[0]}")  # 添加日志
+                    print(f"[INFO] 从Heading 1样式提取标题: {title_candidates[0]}")  # 添加日志
                     break
 
             # 候选2：正文前3段中长度>10且非序号的段落
@@ -242,36 +249,35 @@ class FileRenameApp:
                 text = para.text.strip()
                 if len(text) > 10 and not re.match(r'^第[一二三四五六七八九十0-9]+章?\s*', text):
                     title_candidates.append(text[:30])
-                    print(f"从正文提取标题: {title_candidates[-1]}")  # 添加日志
+                    print(f"[INFO] 从正文段落提取标题: {title_candidates[-1]}")  # 添加日志
                     break
 
             # 候选3：整个文档的第一行
             if doc.paragraphs and not title_candidates:
                 first_line = doc.paragraphs[0].text.strip()[:30]
                 title_candidates.append(first_line)
-                print(f"从第一行提取标题: {first_line}")  # 添加日志
+                print(f"[INFO] 从第一行提取标题: {first_line}")  # 添加日志
 
-            # 返回第一个有效候选
             result = title_candidates[0] if title_candidates else "无标题"
-            print(f"最终提取标题: {result}")  # 添加日志
+            print(f"[INFO] 最终提取标题: {result}")  # 添加日志
             return result
 
         except Exception as e:
             error_msg = f"提取失败: {str(e)}"
-            print(error_msg)  # 添加日志
+            print(f"[ERROR] Word标题提取失败: {error_msg}")  # 添加日志
             return error_msg
 
     def extract_title_from_pdf(self, file_path):
         """从PDF文件中提取标题"""
         try:
-            print(f"开始提取PDF标题: {file_path}")  # 添加日志
+            print(f"[INFO] 开始从PDF提取标题: {file_path}")  # 添加日志
             pdf = PdfReader(file_path)
             info = pdf.metadata
             if info and '/Title' in info:
                 title = info['/Title']
                 if isinstance(title, bytes):
                     title = title.decode('utf-8', errors='replace')
-                print(f"从PDF元数据提取标题: {title}")  # 添加日志
+                print(f"[INFO] 从PDF元数据提取标题: {title}")  # 添加日志
                 return title.strip()
 
             # 若元数据无标题，提取正文首行
@@ -279,24 +285,26 @@ class FileRenameApp:
                 first_page = pdf.pages[0].extract_text()
                 lines = [line.strip() for line in first_page.split('\n') if line.strip()]
                 result = lines[0][:30] if lines else "无标题"
-                print(f"从PDF正文提取标题: {result}")  # 添加日志
+                print(f"[INFO] 从PDF正文提取标题: {result}")  # 添加日志
                 return result
 
-            print("PDF无有效内容，返回无标题")  # 添加日志
+            print("[INFO] PDF无有效内容，返回无标题")  # 添加日志
             return "无标题"
         except Exception as e:
             error_msg = f"提取失败: {str(e)}"
-            print(error_msg)  # 添加日志
+            print(f"[ERROR] PDF标题提取失败: {error_msg}")  # 添加日志
             return error_msg
 
     def extract_title(self):
         file_path = self.path_entry.get().strip()
         if not file_path:
             messagebox.showerror("错误", "请选择文件")
+            print("[ERROR] 未选择文件")  # 添加日志
             return
 
         if not os.path.exists(file_path):
             messagebox.showerror("错误", "文件不存在")
+            print(f"[ERROR] 文件不存在: {file_path}")  # 添加日志
             return
 
         file_ext = os.path.splitext(file_path)[1].lower()
@@ -309,7 +317,7 @@ class FileRenameApp:
 
         try:
             self.status_var.set(f"正在提取标题: {filename}")
-            print(f"开始提取标题流程: {filename}")  # 添加日志
+            print(f"[INFO] 开始提取标题流程: {filename}")  # 添加日志
 
             if file_ext in ['.docx', '.doc']:
                 title = self.extract_title_from_docx(file_path)
@@ -317,23 +325,27 @@ class FileRenameApp:
                 title = self.extract_title_from_pdf(file_path)
             else:
                 title = f"不支持的文件格式: {file_ext}"
+                print(f"[ERROR] 不支持的文件格式: {file_ext}")  # 添加日志
 
             # 处理提取的标题
             if title.startswith("提取失败"):
                 self.preview_text.insert(tk.END, f"错误: {title}\n", "error")
                 self.status_var.set("提取失败")
                 self.execute_btn.config(state=tk.DISABLED)
+                print(f"[ERROR] 标题提取失败: {title}")  # 添加日志
                 return
 
             # 规范化标题
             valid_title = re.sub(r'[\\/:*?"<>|]', '_', title)
             if not valid_title:
                 valid_title = "无标题_" + datetime.now().strftime("%Y%m%d%H%M%S")
+                print("[INFO] 生成默认标题: 无标题_时间戳")  # 添加日志
 
             # 生成新文件名
             prefix = self.title_prefix_var.get().strip()
-            suffix = self.title_suffix_var.get().strip() or os.path.splitext(filename)[1]
-            new_filename = f"{prefix}{valid_title}{suffix}"
+            suffix = self.title_suffix_var.get().strip()
+            ext = os.path.splitext(filename)[1] if not suffix else ""
+            new_filename = f"{prefix}{valid_title}{suffix}{ext}"
 
             self.preview_text.insert(tk.END, f"原始文件名: {filename}\n\n", "original")
             self.preview_text.insert(tk.END, f"提取的标题: {title}\n\n", "title")
@@ -345,9 +357,11 @@ class FileRenameApp:
 
             # 启用重命名按钮
             self.execute_btn.config(state=tk.NORMAL)
+            print(f"[INFO] 标题提取成功，新文件名: {new_filename}")  # 添加日志
 
-            # 自动重命名
+            # 自动重命名（仅当勾选时执行）
             if self.auto_rename_title_var.get():
+                print("[INFO] 自动重命名已启用，执行重命名")  # 添加日志
                 self.execute_rename()
 
         except Exception as e:
@@ -355,10 +369,12 @@ class FileRenameApp:
             self.status_var.set(f"提取出错: {str(e)}")
             traceback.print_exc()
             self.execute_btn.config(state=tk.DISABLED)
+            print(f"[ERROR] 提取标题过程中出错: {str(e)}")  # 添加日志
 
     def execute_rename(self):
         if not self.preview_results:
             messagebox.showinfo("提示", "没有可执行的重命名操作")
+            print("[INFO] 没有可执行的重命名操作")  # 添加日志
             return
 
         try:
@@ -366,7 +382,7 @@ class FileRenameApp:
             old_path = self.file_path
             new_path = os.path.join(os.path.dirname(old_path), new_name)
 
-            print(f"执行重命名: {old_name} → {new_name}")  # 添加日志
+            print(f"[INFO] 执行文件重命名: {old_name} → {new_name}")  # 添加日志
             os.rename(old_path, new_path)
             self.preview_text.insert(tk.END, f"\n\n重命名成功: {old_name} → {new_name}\n", "success")
 
@@ -379,15 +395,17 @@ class FileRenameApp:
             self.original_files_text.delete(1.0, tk.END)
             self.original_files_text.insert(tk.END, new_name)
 
+            print(f"[INFO] 文件重命名成功: {old_path} → {new_path}")  # 添加日志
+
         except Exception as e:
             messagebox.showerror("错误", f"执行时出错: {str(e)}")
             self.status_var.set("操作失败")
-            print(f"重命名失败: {str(e)}")  # 添加日志
+            print(f"[ERROR] 文件重命名失败: {str(e)}")  # 添加日志
 
 
 if __name__ == "__main__":
-    print("程序启动中...")  # 添加日志
+    print("[INFO] 程序启动中...")  # 添加日志
     root = tk.Tk()
     app = FileRenameApp(root)
-    print("程序初始化完成，进入主循环")  # 添加日志
+    print("[INFO] 程序初始化完成，进入主事件循环")  # 添加日志
     root.mainloop()
