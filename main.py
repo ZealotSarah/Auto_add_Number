@@ -9,7 +9,7 @@ from datetime import datetime
 class FileRenameApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("文件批量添加数字序号工具")
+        self.root.title("文件批量/单个重命名工具")
         self.root.geometry("900x700")  # 增加窗口高度
 
         # 设置字体确保中文显示正常
@@ -17,15 +17,30 @@ class FileRenameApp:
 
         # 存储预览结果
         self.preview_results = []
+        self.is_single_file = False  # 标记是否为单个文件模式
 
-        # 创建界面元素 - 确保在所有方法定义之后调用
+        # 创建界面元素
         self.create_widgets()
 
     def browse_folder(self):
         folder_selected = filedialog.askdirectory()
         if folder_selected:
-            self.folder_entry.delete(0, tk.END)
-            self.folder_entry.insert(0, folder_selected)
+            self.path_entry.delete(0, tk.END)
+            self.path_entry.insert(0, folder_selected)
+            self.is_single_file = False
+            self.update_mode_indicator()
+
+    def browse_file(self):
+        file_selected = filedialog.askopenfilename()
+        if file_selected:
+            self.path_entry.delete(0, tk.END)
+            self.path_entry.insert(0, file_selected)
+            self.is_single_file = True
+            self.update_mode_indicator()
+
+    def update_mode_indicator(self):
+        mode_text = "单个文件模式" if self.is_single_file else "批量处理模式"
+        self.mode_label.config(text=mode_text)
 
     def get_file_time(self, file_path, time_type):
         """获取文件的创建时间或修改时间"""
@@ -36,7 +51,7 @@ class FileRenameApp:
         else:  # current
             return datetime.now().timestamp()
 
-    def format_filename(self, filename, index, total, folder_path=None):
+    def format_filename(self, filename, index=1, total=1, folder_path=None):
         """根据格式模板生成新文件名"""
         format_str = self.format_var.get()
         time_format = self.time_format_var.get()
@@ -46,8 +61,7 @@ class FileRenameApp:
         name_part, ext_part = os.path.splitext(filename)
 
         # 生成序号（带前导零）
-        num_digits = len(str(total))
-        # 修正缩进和变量名
+        num_digits = len(str(total)) if total > 1 else 1
         serial_number = f"{index:0{num_digits}d}"
 
         # 生成时间字符串
@@ -70,91 +84,117 @@ class FileRenameApp:
         return new_filename + ext_part
 
     def preview_rename(self):
-        folder_path = self.folder_entry.get().strip()
+        path = self.path_entry.get().strip()
 
-        if not folder_path:
-            messagebox.showerror("错误", "请选择文件夹")
-            return
-
-        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
-            messagebox.showerror("错误", "所选路径不存在或不是文件夹")
+        if not path:
+            messagebox.showerror("错误", "请选择文件或文件夹")
             return
 
         try:
-            # 获取文件夹中的所有文件
-            files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+            if self.is_single_file:
+                # 单个文件处理
+                if not os.path.exists(path) or not os.path.isfile(path):
+                    messagebox.showerror("错误", "所选路径不存在或不是文件")
+                    return
 
-            # 年份前缀的正则表达式模式
-            year_pattern = re.compile(r'^(\d{4})年')
+                filename = os.path.basename(path)
+                folder_path = os.path.dirname(path)
 
-            # 数字前缀的正则表达式模式（匹配01、02、等格式）
-            number_pattern = re.compile(r'^(\d+)(、)\s*')
+                # 生成新文件名
+                new_filename = self.format_filename(filename, folder_path=folder_path)
 
-            # 移除原数字前缀的函数（用于排序）
-            def remove_number_prefix(filename):
-                match = number_pattern.search(filename)
-                if match:
-                    return filename[match.end():]
-                return filename
+                # 显示预览
+                self.preview_results = [(filename, new_filename)]
+                original_text = f"1. {filename}\n"
+                preview_text = f"1. 将 '{filename}' → '{new_filename}'\n"
 
-            # 按文件名称主体排序（忽略原数字前缀）
-            sorted_files = sorted(files, key=lambda x: remove_number_prefix(x))
+                self.original_files_text.delete(1.0, tk.END)
+                self.original_files_text.insert(tk.END, original_text)
+                self.preview_text.delete(1.0, tk.END)
+                self.preview_text.insert(tk.END, preview_text)
 
-            # 过滤掉年份前缀文件（如果选择保留）
-            regular_files = []
-            year_files = []
+                self.status_var.set(f"预览完成，1个文件将被处理")
 
-            for filename in sorted_files:
-                if self.keep_year_var.get() and year_pattern.match(filename):
-                    year_files.append(filename)
-                else:
-                    regular_files.append(filename)
+            else:
+                # 批量处理（原有逻辑）
+                if not os.path.exists(path) or not os.path.isdir(path):
+                    messagebox.showerror("错误", "所选路径不存在或不是文件夹")
+                    return
 
-            # 显示原始文件列表
-            original_text = ""
-            for i, filename in enumerate(sorted_files, 1):
-                original_text += f"{i:02d}. {filename}\n"
+                folder_path = path
+                files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
 
-            self.original_files_text.delete(1.0, tk.END)
-            self.original_files_text.insert(tk.END, original_text)
+                # 年份前缀的正则表达式模式
+                year_pattern = re.compile(r'^(\d{4})年')
 
-            # 生成预览结果
-            self.preview_results = []
-            preview_text = ""
+                # 数字前缀的正则表达式模式（匹配01、02、等格式）
+                number_pattern = re.compile(r'^(\d+)(、)\s*')
 
-            total_files = len(regular_files)
+                # 移除原数字前缀的函数（用于排序）
+                def remove_number_prefix(filename):
+                    match = number_pattern.search(filename)
+                    if match:
+                        return filename[match.end():]
+                    return filename
 
-            for i, filename in enumerate(regular_files, 1):
-                # 提取文件名主体
-                match = number_pattern.search(filename)
-                if match and self.overwrite_existing_var.get():
-                    # 保留文件名主体部分（去除前缀后的内容）
-                    rest_of_filename = filename[match.end():]
-                else:
-                    rest_of_filename = filename
+                # 按文件名称主体排序（忽略原数字前缀）
+                sorted_files = sorted(files, key=lambda x: remove_number_prefix(x))
 
-                # 使用自定义格式生成新文件名
-                new_filename = self.format_filename(rest_of_filename, i, total_files, folder_path)
+                # 过滤掉年份前缀文件（如果选择保留）
+                regular_files = []
+                year_files = []
 
-                if filename != new_filename:
-                    preview_text += f"{i:02d}. 将 '{filename}' → '{new_filename}'\n"
-                else:
-                    preview_text += f"{i:02d}. 保持 '{filename}' 不变\n"
+                for filename in sorted_files:
+                    if self.keep_year_var.get() and year_pattern.match(filename):
+                        year_files.append(filename)
+                    else:
+                        regular_files.append(filename)
 
-                self.preview_results.append((filename, new_filename))
+                # 显示原始文件列表
+                original_text = ""
+                for i, filename in enumerate(sorted_files, 1):
+                    original_text += f"{i:02d}. {filename}\n"
 
-            if self.keep_year_var.get() and year_files:
-                preview_text += "\n以下文件因包含年份前缀被保留:\n"
-                for j, filename in enumerate(year_files, i + 1):
-                    preview_text += f"{j:02d}. {filename}\n"
+                self.original_files_text.delete(1.0, tk.END)
+                self.original_files_text.insert(tk.END, original_text)
 
-            # 更新预览文本
-            self.preview_text.delete(1.0, tk.END)
-            self.preview_text.insert(tk.END, preview_text)
+                # 生成预览结果
+                self.preview_results = []
+                preview_text = ""
+
+                total_files = len(regular_files)
+
+                for i, filename in enumerate(regular_files, 1):
+                    # 提取文件名主体
+                    match = number_pattern.search(filename)
+                    if match and self.overwrite_existing_var.get():
+                        rest_of_filename = filename[match.end():]
+                    else:
+                        rest_of_filename = filename
+
+                    # 使用自定义格式生成新文件名
+                    new_filename = self.format_filename(rest_of_filename, i, total_files, folder_path)
+
+                    if filename != new_filename:
+                        preview_text += f"{i:02d}. 将 '{filename}' → '{new_filename}'\n"
+                    else:
+                        preview_text += f"{i:02d}. 保持 '{filename}' 不变\n"
+
+                    self.preview_results.append((filename, new_filename))
+
+                if self.keep_year_var.get() and year_files:
+                    preview_text += "\n以下文件因包含年份前缀被保留:\n"
+                    for j, filename in enumerate(year_files, i + 1):
+                        preview_text += f"{j:02d}. {filename}\n"
+
+                # 更新预览文本
+                self.preview_text.delete(1.0, tk.END)
+                self.preview_text.insert(tk.END, preview_text)
+
+                self.status_var.set(f"预览完成，共 {len(regular_files)} 个文件将被处理")
 
             # 启用执行按钮
             self.execute_btn.config(state=tk.NORMAL)
-            self.status_var.set(f"预览完成，共 {len(regular_files)} 个文件将被处理")
 
         except Exception as e:
             messagebox.showerror("错误", f"预览时出错: {str(e)}")
@@ -165,26 +205,36 @@ class FileRenameApp:
             messagebox.showinfo("提示", "没有可执行的重命名操作")
             return
 
-        folder_path = self.folder_entry.get().strip()
-
-        # 确认对话框
-        confirm = messagebox.askyesno("确认", f"确定要处理 {len(self.preview_results)} 个文件吗？")
-        if not confirm:
-            return
+        path = self.path_entry.get().strip()
 
         try:
-            # 执行重命名
-            for old_name, new_name in self.preview_results:
-                if old_name != new_name:  # 只处理需要重命名的文件
-                    old_path = os.path.join(folder_path, old_name)
-                    new_path = os.path.join(folder_path, new_name)
-                    os.rename(old_path, new_path)
+            if self.is_single_file:
+                # 单个文件处理
+                old_name, new_name = self.preview_results[0]
+                old_path = os.path.join(os.path.dirname(path), old_name)
+                new_path = os.path.join(os.path.dirname(path), new_name)
 
-            messagebox.showinfo("成功", f"已成功处理 {len(self.preview_results)} 个文件")
+                os.rename(old_path, new_path)
+                messagebox.showinfo("成功", f"已成功重命名文件: {old_name} → {new_name}")
+
+            else:
+                # 批量处理
+                folder_path = path
+                processed_count = 0
+
+                for old_name, new_name in self.preview_results:
+                    if old_name != new_name:
+                        old_path = os.path.join(folder_path, old_name)
+                        new_path = os.path.join(folder_path, new_name)
+                        os.rename(old_path, new_path)
+                        processed_count += 1
+
+                messagebox.showinfo("成功", f"已成功处理 {processed_count} 个文件")
+
             self.status_var.set("操作完成")
             self.execute_btn.config(state=tk.DISABLED)
 
-            # 刷新预览结果 - 显示处理后的文件列表
+            # 刷新预览结果
             self.preview_rename()
 
         except Exception as e:
@@ -192,17 +242,24 @@ class FileRenameApp:
             self.status_var.set("操作失败")
 
     def create_widgets(self):
-        # 选择文件夹框架
-        folder_frame = tk.Frame(self.root, padx=10, pady=10)
-        folder_frame.pack(fill=tk.X)
+        # 路径选择框架
+        path_frame = tk.Frame(self.root, padx=10, pady=10)
+        path_frame.pack(fill=tk.X)
 
-        tk.Label(folder_frame, text="文件夹路径:", font=self.font).pack(side=tk.LEFT)
+        tk.Label(path_frame, text="文件/文件夹路径:", font=self.font).pack(side=tk.LEFT)
 
-        self.folder_entry = tk.Entry(folder_frame, width=60, font=self.font)
-        self.folder_entry.pack(side=tk.LEFT, padx=5)
+        self.path_entry = tk.Entry(path_frame, width=60, font=self.font)
+        self.path_entry.pack(side=tk.LEFT, padx=5)
 
-        browse_btn = tk.Button(folder_frame, text="浏览...", font=self.font, command=self.browse_folder)
-        browse_btn.pack(side=tk.LEFT)
+        folder_btn = tk.Button(path_frame, text="浏览文件夹", font=self.font, command=self.browse_folder)
+        folder_btn.pack(side=tk.LEFT, padx=5)
+
+        file_btn = tk.Button(path_frame, text="浏览文件", font=self.font, command=self.browse_file)
+        file_btn.pack(side=tk.LEFT)
+
+        # 模式指示器
+        self.mode_label = tk.Label(path_frame, text="批量处理模式", font=self.font, fg="blue")
+        self.mode_label.pack(side=tk.LEFT, padx=10)
 
         # 选项框架 - 第一行
         options_frame1 = tk.Frame(self.root, padx=10, pady=5)
@@ -218,14 +275,14 @@ class FileRenameApp:
                                          variable=self.overwrite_existing_var, font=self.font)
         overwrite_check.pack(side=tk.LEFT, padx=10)
 
-        # 选项框架 - 第二行 (新增命名格式选项)
+        # 选项框架 - 第二行 (命名格式选项)
         options_frame2 = tk.Frame(self.root, padx=10, pady=5)
         options_frame2.pack(fill=tk.X)
 
         tk.Label(options_frame2, text="命名格式:", font=self.font).pack(side=tk.LEFT)
 
-        # 预设格式下拉菜单 - 添加新的格式选项
-        self.format_var = tk.StringVar(value="{序号}、{原文件名}")
+        # 预设格式下拉菜单
+        self.format_var = tk.StringVar(value="{序号}_{原文件名}_{时间}")
         format_options = [
             "{序号}、{原文件名}",
             "{序号}_{原文件名}",
@@ -233,7 +290,7 @@ class FileRenameApp:
             "{序号}_{时间}_{原文件名}",
             "{原文件名}_{序号}",
             "{原文件名}_{时间}",
-            "{序号}_{原文件名}_{时间}"  # 新增的命名格式
+            "{序号}_{原文件名}_{时间}"
         ]
         format_combo = ttk.Combobox(options_frame2, textvariable=self.format_var,
                                     values=format_options, width=25, font=self.font)
