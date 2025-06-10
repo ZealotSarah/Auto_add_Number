@@ -29,7 +29,7 @@ class FileRenameApp:
         # 存储预览结果
         self.preview_results = []
         self.is_single_file = False
-        self.current_mode = "title"
+        self.current_mode = "batch"  # 默认选择批量重命名
 
         # 创建界面元素
         self.create_widgets()
@@ -40,7 +40,7 @@ class FileRenameApp:
         mode_frame = tk.Frame(self.root, padx=10, pady=5)
         mode_frame.pack(fill=tk.X)
 
-        self.mode_var = tk.StringVar(value="title")
+        self.mode_var = tk.StringVar(value="batch")  # 默认选择批量重命名
         batch_radio = tk.Radiobutton(mode_frame, text="批量重命名",
                                      variable=self.mode_var, value="batch",
                                      font=self.font, command=self.change_mode)
@@ -73,7 +73,7 @@ class FileRenameApp:
                                   command=self.browse_file)
         self.file_btn.pack(side=tk.LEFT, padx=5)
 
-        self.mode_label = tk.Label(path_frame, text="按标题重命名模式", font=self.font, fg="blue")
+        self.mode_label = tk.Label(path_frame, text="批量处理模式", font=self.font, fg="blue")
         self.mode_label.pack(side=tk.LEFT, padx=10)
 
         # 预设命名格式框架
@@ -109,11 +109,13 @@ class FileRenameApp:
         tk.Label(self.numbering_frame, text="起始序号:", font=self.font).pack(side=tk.LEFT, padx=5)
         start_num_entry = tk.Entry(self.numbering_frame, textvariable=self.start_num_var, width=5, font=self.font)
         start_num_entry.pack(side=tk.LEFT, padx=5)
+        start_num_entry.bind("<KeyRelease>", self.on_numbering_change)  # 绑定事件
 
-        self.digits_var = tk.IntVar(value=3)
+        self.digits_var = tk.IntVar(value=2)  # 批量重命名下数字位数默认为2位
         tk.Label(self.numbering_frame, text="数字位数:", font=self.font).pack(side=tk.LEFT, padx=5)
         digits_entry = tk.Entry(self.numbering_frame, textvariable=self.digits_var, width=5, font=self.font)
         digits_entry.pack(side=tk.LEFT, padx=5)
+        digits_entry.bind("<KeyRelease>", self.on_numbering_change)  # 绑定事件
 
         # 日期格式设置框架
         self.date_format_frame = tk.Frame(self.root, padx=10, pady=0)
@@ -130,6 +132,7 @@ class FileRenameApp:
             font=self.font
         )
         date_format_combobox.pack(side=tk.LEFT, padx=5)
+        date_format_combobox.bind("<<ComboboxSelected>>", self.on_date_format_change)  # 绑定事件
 
         # 智能识别已有格式文件的选项
         self.ignore_existing_format_var = tk.BooleanVar(value=False)
@@ -137,7 +140,8 @@ class FileRenameApp:
             self.date_format_frame,
             text="忽略已符合格式的文件",
             variable=self.ignore_existing_format_var,
-            font=self.font
+            font=self.font,
+            command=self.on_ignore_existing_change  # 绑定事件
         )
         ignore_check.pack(side=tk.LEFT, padx=10)
 
@@ -206,7 +210,7 @@ class FileRenameApp:
         left_frame = tk.Frame(preview_frame)
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
 
-        self.original_label = tk.Label(left_frame, text="原始文件名:", font=self.font, fg="blue")
+        self.original_label = tk.Label(left_frame, text="原始文件列表:", font=self.font, fg="blue")
         self.original_label.pack(anchor=tk.W)
 
         self.original_files_text = scrolledtext.ScrolledText(left_frame, width=40, height=5, font=self.font)
@@ -216,7 +220,7 @@ class FileRenameApp:
         right_frame = tk.Frame(preview_frame)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(5, 0))
 
-        self.preview_label = tk.Label(right_frame, text="提取结果:", font=self.font, fg="green")
+        self.preview_label = tk.Label(right_frame, text="重命名预览:", font=self.font, fg="green")
         self.preview_label.pack(anchor=tk.W)
 
         self.preview_text = scrolledtext.ScrolledText(right_frame, width=40, height=5, font=self.font)
@@ -228,7 +232,7 @@ class FileRenameApp:
 
         self.extract_title_btn = tk.Button(btn_frame, text="提取标题", font=self.font,
                                            command=self.extract_title)
-        self.extract_title_btn.pack(side=tk.LEFT, padx=5)
+        self.extract_title_btn.pack_forget()  # 批量模式不需要提取标题按钮
 
         self.execute_btn = tk.Button(btn_frame, text="执行重命名", font=self.font,
                                      command=self.execute_rename, state=tk.DISABLED)
@@ -310,6 +314,33 @@ class FileRenameApp:
         self.update_date_format_frame_visibility()
 
         # 如果是批量模式，自动更新预览
+        if self.current_mode == "batch" and self.path_entry.get():
+            folder_path = self.path_entry.get()
+            if os.path.isdir(folder_path):
+                files = os.listdir(folder_path)
+                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+                self.generate_batch_preview(files, folder_path)
+
+    def on_numbering_change(self, event=None):
+        """起始序号或数字位数变化时的处理"""
+        if self.current_mode == "batch" and self.path_entry.get():
+            folder_path = self.path_entry.get()
+            if os.path.isdir(folder_path):
+                files = os.listdir(folder_path)
+                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+                self.generate_batch_preview(files, folder_path)
+
+    def on_date_format_change(self, event=None):
+        """日期格式变化时的处理"""
+        if self.current_mode == "batch" and self.path_entry.get():
+            folder_path = self.path_entry.get()
+            if os.path.isdir(folder_path):
+                files = os.listdir(folder_path)
+                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+                self.generate_batch_preview(files, folder_path)
+
+    def on_ignore_existing_change(self):
+        """忽略已符合格式的文件选项变化时的处理"""
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
