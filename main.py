@@ -76,7 +76,7 @@ class FileRenameApp:
         self.mode_label = tk.Label(path_frame, text="按标题重命名模式", font=self.font, fg="blue")
         self.mode_label.pack(side=tk.LEFT, padx=10)
 
-        # 标题重命名选项框架
+        # 标题重命名选项框架 - 现在对所有模式可见
         self.title_options_frame = tk.Frame(self.root, padx=10, pady=5)
         self.title_options_frame.pack(fill=tk.X)
 
@@ -97,7 +97,7 @@ class FileRenameApp:
         suffix_entry = tk.Entry(self.title_options_frame, textvariable=self.title_suffix_var, width=10, font=self.font)
         suffix_entry.pack(side=tk.LEFT, padx=5)
 
-        # 新增：文件格式后缀修改框架
+        # 文件格式后缀修改框架 - 对所有模式可见
         self.extension_frame = tk.Frame(self.root, padx=10, pady=5)
         self.extension_frame.pack(fill=tk.X)
 
@@ -189,8 +189,7 @@ class FileRenameApp:
             self.is_single_file = False
             self.mode_label.config(text="批量处理模式")
             self.folder_btn.config(text="浏览文件夹", command=self.browse_folder)
-            self.title_options_frame.pack_forget()
-            self.extract_title_btn.pack_forget()
+            self.extract_title_btn.pack_forget()  # 批量模式不需要提取标题按钮
             self.original_label.config(text="原始文件列表:")
             self.preview_label.config(text="重命名预览:")
 
@@ -198,8 +197,7 @@ class FileRenameApp:
             self.is_single_file = True
             self.mode_label.config(text="单个文件模式")
             self.folder_btn.config(text="浏览文件", command=self.browse_file)
-            self.title_options_frame.pack_forget()
-            self.extract_title_btn.pack_forget()
+            self.extract_title_btn.pack_forget()  # 单个文件模式不需要提取标题按钮
             self.original_label.config(text="原始文件:")
             self.preview_label.config(text="重命名预览:")
 
@@ -207,10 +205,13 @@ class FileRenameApp:
             self.is_single_file = True
             self.mode_label.config(text="按标题重命名模式")
             self.folder_btn.config(text="浏览文件", command=self.browse_file)
-            self.title_options_frame.pack(fill=tk.X)
-            self.extract_title_btn.pack(side=tk.LEFT, padx=5)
+            self.extract_title_btn.pack(side=tk.LEFT, padx=5)  # 显示提取标题按钮
             self.original_label.config(text="原始文件名:")
             self.preview_label.config(text="提取结果:")
+
+        # 修复：不再隐藏标题选项和后缀修改选项
+        self.title_options_frame.pack(fill=tk.X)
+        self.extension_frame.pack(fill=tk.X)
 
         self.path_entry.delete(0, tk.END)
         self.original_files_text.delete(1.0, tk.END)
