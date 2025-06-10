@@ -23,7 +23,7 @@ class FileRenameApp:
     def __init__(self, root):
         self.root = root
         self.root.title("多功能文件重命名工具")
-        self.root.geometry("900x800")  # 增加窗口高度
+        self.root.geometry("900x820")  # 增加窗口高度
         self.font = ('Microsoft YaHei UI', 10)
 
         # 存储预览结果
@@ -76,7 +76,7 @@ class FileRenameApp:
         self.mode_label = tk.Label(path_frame, text="按标题重命名模式", font=self.font, fg="blue")
         self.mode_label.pack(side=tk.LEFT, padx=10)
 
-        # 预设命名格式框架 - 新增
+        # 预设命名格式框架
         self.preset_frame = tk.Frame(self.root, padx=10, pady=5)
         self.preset_frame.pack(fill=tk.X)
 
@@ -93,15 +93,16 @@ class FileRenameApp:
                 "时间戳模式 (YYYYMMDD_HHMMSS)",
                 "序号+原文件名",
                 "日期+原文件名",
-                "原文件名+序号"
+                "原文件名+序号",
+                "序号_原文件名_日期"  # 新增预设格式
             ],
-            width=20,
+            width=25,
             font=self.font
         )
         self.preset_combobox.pack(side=tk.LEFT, padx=5)
         self.preset_combobox.bind("<<ComboboxSelected>>", self.on_preset_change)
 
-        # 序号设置 - 仅在需要时显示
+        # 序号设置框架
         self.numbering_frame = tk.Frame(self.root, padx=10, pady=0)
 
         self.start_num_var = tk.IntVar(value=1)
@@ -113,6 +114,32 @@ class FileRenameApp:
         tk.Label(self.numbering_frame, text="数字位数:", font=self.font).pack(side=tk.LEFT, padx=5)
         digits_entry = tk.Entry(self.numbering_frame, textvariable=self.digits_var, width=5, font=self.font)
         digits_entry.pack(side=tk.LEFT, padx=5)
+
+        # 日期格式设置框架
+        self.date_format_frame = tk.Frame(self.root, padx=10, pady=0)
+
+        self.date_format_var = tk.StringVar(value="YYYYMMDD")
+        date_format_label = tk.Label(self.date_format_frame, text="日期格式:", font=self.font)
+        date_format_label.pack(side=tk.LEFT, padx=5)
+
+        date_format_combobox = ttk.Combobox(
+            self.date_format_frame,
+            textvariable=self.date_format_var,
+            values=["YYYYMMDD", "YYYY-MM-DD", "YYMMDD", "YY-MM-DD"],
+            width=10,
+            font=self.font
+        )
+        date_format_combobox.pack(side=tk.LEFT, padx=5)
+
+        # 智能识别已有格式文件的选项
+        self.ignore_existing_format_var = tk.BooleanVar(value=False)
+        ignore_check = tk.Checkbutton(
+            self.date_format_frame,
+            text="忽略已符合格式的文件",
+            variable=self.ignore_existing_format_var,
+            font=self.font
+        )
+        ignore_check.pack(side=tk.LEFT, padx=10)
 
         # 标题重命名选项框架
         self.title_options_frame = tk.Frame(self.root, padx=10, pady=5)
@@ -249,11 +276,10 @@ class FileRenameApp:
 
         # 显示预设框架和相关选项
         self.preset_frame.pack(fill=tk.X)
+        self.update_numbering_frame_visibility()
+        self.update_date_format_frame_visibility()
         self.title_options_frame.pack(fill=tk.X)
         self.extension_frame.pack(fill=tk.X)
-
-        # 根据预设选择显示或隐藏序号设置
-        self.update_numbering_frame_visibility()
 
         self.path_entry.delete(0, tk.END)
         self.original_files_text.delete(1.0, tk.END)
@@ -265,14 +291,23 @@ class FileRenameApp:
     def update_numbering_frame_visibility(self):
         """根据预设选择显示或隐藏序号设置框架"""
         preset = self.preset_var.get()
-        if preset in ["序号模式 (001, 002...)", "序号+原文件名", "原文件名+序号"]:
+        if preset in ["序号模式 (001, 002...)", "序号+原文件名", "原文件名+序号", "序号_原文件名_日期"]:
             self.numbering_frame.pack(fill=tk.X, pady=2)
         else:
             self.numbering_frame.pack_forget()
 
+    def update_date_format_frame_visibility(self):
+        """根据预设选择显示或隐藏日期格式设置框架"""
+        preset = self.preset_var.get()
+        if preset in ["日期模式 (YYYYMMDD)", "日期+原文件名", "序号_原文件名_日期"]:
+            self.date_format_frame.pack(fill=tk.X, pady=2)
+        else:
+            self.date_format_frame.pack_forget()
+
     def on_preset_change(self, event=None):
         """预设命名格式选择变化时的处理"""
         self.update_numbering_frame_visibility()
+        self.update_date_format_frame_visibility()
 
         # 如果是批量模式，自动更新预览
         if self.current_mode == "batch" and self.path_entry.get():
@@ -347,6 +382,52 @@ class FileRenameApp:
         except Exception as e:
             self.original_files_text.insert(tk.END, f"无法读取文件夹内容: {str(e)}")
 
+    def parse_date_format(self, format_str):
+        """将用户友好的日期格式转换为Python的strftime格式"""
+        format_map = {
+            "YYYYMMDD": "%Y%m%d",
+            "YYYY-MM-DD": "%Y-%m-%d",
+            "YYMMDD": "%y%m%d",
+            "YY-MM-DD": "%y-%m-%d"
+        }
+        return format_map.get(format_str, "%Y%m%d")
+
+    def is_sequence_filename_format(self, filename):
+        """检查文件名是否符合'序号_原文件名_日期'格式"""
+        # 获取文件名部分（不含扩展名）
+        base_name, _ = os.path.splitext(filename)
+
+        # 检查是否符合格式：数字_文本_日期
+        # 匹配模式：1-9位数字 + 下划线 + 任意文本 + 下划线 + 日期格式
+        patterns = [
+            r'^\d{1,9}_.+_\d{4}\d{2}\d{2}$',  # YYYYMMDD
+            r'^\d{1,9}_.+_\d{4}-\d{2}-\d{2}$',  # YYYY-MM-DD
+            r'^\d{1,9}_.+_\d{2}\d{2}\d{2}$',  # YYMMDD
+            r'^\d{1,9}_.+_\d{2}-\d{2}-\d{2}$',  # YY-MM-DD
+        ]
+
+        for pattern in patterns:
+            if re.match(pattern, base_name):
+                return True
+
+        return False
+
+    def get_next_sequence_number(self, files):
+        """获取文件夹中已有'序号_原文件名_日期'格式文件的最大序号+1"""
+        max_seq = 0
+        for file in files:
+            if self.is_sequence_filename_format(file):
+                base_name, _ = os.path.splitext(file)
+                parts = base_name.split('_')
+                if len(parts) >= 3:
+                    try:
+                        seq_num = int(parts[0])
+                        if seq_num > max_seq:
+                            max_seq = seq_num
+                    except ValueError:
+                        continue
+        return max_seq + 1
+
     def generate_batch_preview(self, files, folder_path):
         """生成批量重命名预览"""
         self.preview_text.delete(1.0, tk.END)
@@ -355,42 +436,65 @@ class FileRenameApp:
         suffix = self.title_suffix_var.get().strip()
         target_ext = self.get_target_extension()
         preset = self.preset_var.get()
+        date_format = self.parse_date_format(self.date_format_var.get())
+        current_date = datetime.now().strftime(date_format)
+        ignore_existing = self.ignore_existing_format_var.get()
 
         renamed_files = []
+
+        # 如果启用了忽略已有格式，先确定起始序号
         start_num = self.start_num_var.get()
+        if ignore_existing and preset == "序号_原文件名_日期":
+            start_num = self.get_next_sequence_number(files)
+            print(f"[INFO] 已有格式文件检测完成，起始序号设置为: {start_num}")
+
+        # 处理每个文件
+        seq_num = start_num
         digits = self.digits_var.get()
 
-        for i, file in enumerate(files, start=start_num):
+        for file in files:
             base_name, ext = os.path.splitext(file)
 
-            # 应用预设命名格式
-            new_base_name = base_name
-            if preset == "序号模式 (001, 002...)":
-                new_base_name = f"{i:0{digits}d}"
-            elif preset == "日期模式 (YYYYMMDD)":
-                new_base_name = datetime.now().strftime("%Y%m%d")
-            elif preset == "时间戳模式 (YYYYMMDD_HHMMSS)":
-                new_base_name = datetime.now().strftime("%Y%m%d_%H%M%S")
-            elif preset == "序号+原文件名":
-                new_base_name = f"{i:0{digits}d}_{base_name}"
-            elif preset == "日期+原文件名":
-                new_base_name = f"{datetime.now().strftime('%Y%m%d')}_{base_name}"
-            elif preset == "原文件名+序号":
-                new_base_name = f"{base_name}_{i:0{digits}d}"
-
-            # 应用前缀和后缀
-            if prefix:
-                new_base_name = prefix + new_base_name
-            if suffix:
-                new_base_name += suffix
-
-            # 应用新的文件后缀
-            if target_ext:
-                new_ext = f".{target_ext}"
+            # 如果启用了忽略已有格式且文件已经符合格式，则保持不变
+            if ignore_existing and preset == "序号_原文件名_日期" and self.is_sequence_filename_format(file):
+                new_name = file
+                print(f"[INFO] 保留已有格式文件: {file}")
             else:
-                new_ext = ext
+                # 应用预设命名格式
+                new_base_name = base_name
+                if preset == "序号模式 (001, 002...)":
+                    new_base_name = f"{seq_num:0{digits}d}"
+                elif preset == "日期模式 (YYYYMMDD)":
+                    new_base_name = current_date
+                elif preset == "时间戳模式 (YYYYMMDD_HHMMSS)":
+                    new_base_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+                elif preset == "序号+原文件名":
+                    new_base_name = f"{seq_num:0{digits}d}_{base_name}"
+                elif preset == "日期+原文件名":
+                    new_base_name = f"{current_date}_{base_name}"
+                elif preset == "原文件名+序号":
+                    new_base_name = f"{base_name}_{seq_num:0{digits}d}"
+                elif preset == "序号_原文件名_日期":
+                    new_base_name = f"{seq_num:0{digits}d}_{base_name}_{current_date}"
 
-            new_name = new_base_name + new_ext
+                # 应用前缀和后缀
+                if prefix:
+                    new_base_name = prefix + new_base_name
+                if suffix:
+                    new_base_name += suffix
+
+                # 应用新的文件后缀
+                if target_ext:
+                    new_ext = f".{target_ext}"
+                else:
+                    new_ext = ext
+
+                new_name = new_base_name + new_ext
+
+                # 仅在需要递增序号的预设下增加序号
+                if preset in ["序号模式 (001, 002...)", "序号+原文件名", "原文件名+序号", "序号_原文件名_日期"]:
+                    seq_num += 1
+
             renamed_files.append((file, new_name))
 
             # 只显示前100个预览
@@ -593,18 +697,23 @@ class FileRenameApp:
 
             # 应用预设命名格式（针对单个文件）
             preset = self.preset_var.get()
+            date_format = self.parse_date_format(self.date_format_var.get())
+            current_date = datetime.now().strftime(date_format)
+
             if preset == "序号模式 (001, 002...)":
                 new_base_name = f"{self.start_num_var.get():0{self.digits_var.get()}d}"
             elif preset == "日期模式 (YYYYMMDD)":
-                new_base_name = datetime.now().strftime("%Y%m%d")
+                new_base_name = current_date
             elif preset == "时间戳模式 (YYYYMMDD_HHMMSS)":
                 new_base_name = datetime.now().strftime("%Y%m%d_%H%M%S")
             elif preset == "序号+原文件名":
                 new_base_name = f"{self.start_num_var.get():0{self.digits_var.get()}d}_{valid_title}"
             elif preset == "日期+原文件名":
-                new_base_name = f"{datetime.now().strftime('%Y%m%d')}_{valid_title}"
+                new_base_name = f"{current_date}_{valid_title}"
             elif preset == "原文件名+序号":
                 new_base_name = f"{valid_title}_{self.start_num_var.get():0{self.digits_var.get()}d}"
+            elif preset == "序号_原文件名_日期":
+                new_base_name = f"{self.start_num_var.get():0{self.digits_var.get()}d}_{valid_title}_{current_date}"
             else:
                 new_base_name = valid_title
 
@@ -657,6 +766,10 @@ class FileRenameApp:
                 for old_name, new_name in self.preview_results:
                     old_path = os.path.join(folder_path, old_name)
                     new_path = os.path.join(folder_path, new_name)
+
+                    # 如果新旧文件名相同，跳过重命名
+                    if old_name == new_name:
+                        continue
 
                     try:
                         os.rename(old_path, new_path)
