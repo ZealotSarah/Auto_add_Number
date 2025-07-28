@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import tkinter as tk
-from tkinter import filedialog, scrolledtext, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, scrolledtext
 from pathlib import Path
 from datetime import datetime
 import docx
@@ -23,13 +23,15 @@ class FileRenameApp:
     def __init__(self, root):
         self.root = root
         self.root.title("多功能文件重命名工具")
-        self.root.geometry("900x820")  # 增加窗口高度
+        self.root.geometry("900x820")
         self.font = ('Microsoft YaHei UI', 10)
 
         # 存储预览结果
         self.preview_results = []
         self.is_single_file = False
         self.current_mode = "batch"  # 默认选择批量重命名
+        self.drag_data = {"index": None, "item": None}  # 用于拖动排序的数据
+        self.file_list = []  # 存储当前文件列表
 
         # 创建界面元素
         self.create_widgets()
@@ -40,7 +42,7 @@ class FileRenameApp:
         mode_frame = tk.Frame(self.root, padx=10, pady=5)
         mode_frame.pack(fill=tk.X)
 
-        self.mode_var = tk.StringVar(value="batch")  # 默认选择批量重命名
+        self.mode_var = tk.StringVar(value="batch")
         batch_radio = tk.Radiobutton(mode_frame, text="批量重命名",
                                      variable=self.mode_var, value="batch",
                                      font=self.font, command=self.change_mode)
@@ -94,7 +96,7 @@ class FileRenameApp:
                 "序号+原文件名",
                 "日期+原文件名",
                 "原文件名+序号",
-                "序号_原文件名_日期"  # 新增预设格式
+                "序号_原文件名_日期"
             ],
             width=25,
             font=self.font
@@ -109,13 +111,13 @@ class FileRenameApp:
         tk.Label(self.numbering_frame, text="起始序号:", font=self.font).pack(side=tk.LEFT, padx=5)
         start_num_entry = tk.Entry(self.numbering_frame, textvariable=self.start_num_var, width=5, font=self.font)
         start_num_entry.pack(side=tk.LEFT, padx=5)
-        start_num_entry.bind("<KeyRelease>", self.on_numbering_change)  # 绑定事件
+        start_num_entry.bind("<KeyRelease>", self.on_numbering_change)
 
-        self.digits_var = tk.IntVar(value=2)  # 批量重命名下数字位数默认为2位
+        self.digits_var = tk.IntVar(value=2)
         tk.Label(self.numbering_frame, text="数字位数:", font=self.font).pack(side=tk.LEFT, padx=5)
         digits_entry = tk.Entry(self.numbering_frame, textvariable=self.digits_var, width=5, font=self.font)
         digits_entry.pack(side=tk.LEFT, padx=5)
-        digits_entry.bind("<KeyRelease>", self.on_numbering_change)  # 绑定事件
+        digits_entry.bind("<KeyRelease>", self.on_numbering_change)
 
         # 日期格式设置框架
         self.date_format_frame = tk.Frame(self.root, padx=10, pady=0)
@@ -132,7 +134,7 @@ class FileRenameApp:
             font=self.font
         )
         date_format_combobox.pack(side=tk.LEFT, padx=5)
-        date_format_combobox.bind("<<ComboboxSelected>>", self.on_date_format_change)  # 绑定事件
+        date_format_combobox.bind("<<ComboboxSelected>>", self.on_date_format_change)
 
         # 智能识别已有格式文件的选项
         self.ignore_existing_format_var = tk.BooleanVar(value=False)
@@ -141,7 +143,7 @@ class FileRenameApp:
             text="忽略已符合格式的文件",
             variable=self.ignore_existing_format_var,
             font=self.font,
-            command=self.on_ignore_existing_change  # 绑定事件
+            command=self.on_ignore_existing_change
         )
         ignore_check.pack(side=tk.LEFT, padx=10)
 
@@ -149,7 +151,7 @@ class FileRenameApp:
         self.title_options_frame = tk.Frame(self.root, padx=10, pady=5)
         self.title_options_frame.pack(fill=tk.X)
 
-        self.auto_rename_title_var = tk.BooleanVar(value=False)  # 默认不自动重命名
+        self.auto_rename_title_var = tk.BooleanVar(value=False)
         auto_rename_title_check = tk.Checkbutton(self.title_options_frame, text="自动重命名",
                                                  variable=self.auto_rename_title_var, font=self.font)
         auto_rename_title_check.pack(side=tk.LEFT, padx=5)
@@ -172,7 +174,6 @@ class FileRenameApp:
 
         tk.Label(self.extension_frame, text="修改文件后缀:", font=self.font).pack(side=tk.LEFT, padx=5)
 
-        # 常用文件格式下拉菜单
         self.common_extensions = [
             "不修改", "txt", "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
             "jpg", "jpeg", "png", "gif", "bmp", "svg", "mp4", "avi", "mov",
@@ -213,8 +214,21 @@ class FileRenameApp:
         self.original_label = tk.Label(left_frame, text="原始文件列表:", font=self.font, fg="blue")
         self.original_label.pack(anchor=tk.W)
 
-        self.original_files_text = scrolledtext.ScrolledText(left_frame, width=40, height=5, font=self.font)
-        self.original_files_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        # 使用 Listbox 替代 ScrolledText，支持拖动排序
+        self.original_files_listbox = tk.Listbox(
+            left_frame,
+            width=40,
+            height=5,
+            font=self.font,
+            selectmode=tk.EXTENDED,
+            activestyle=tk.NONE
+        )
+        self.original_files_listbox.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # 绑定拖动排序事件
+        self.original_files_listbox.bind("<Button-1>", self.on_drag_start)
+        self.original_files_listbox.bind("<B1-Motion>", self.on_drag_motion)
+        self.original_files_listbox.bind("<ButtonRelease-1>", self.on_drag_end)
 
         # 右侧 - 提取结果
         right_frame = tk.Frame(preview_frame)
@@ -223,8 +237,21 @@ class FileRenameApp:
         self.preview_label = tk.Label(right_frame, text="重命名预览:", font=self.font, fg="green")
         self.preview_label.pack(anchor=tk.W)
 
-        self.preview_text = scrolledtext.ScrolledText(right_frame, width=40, height=5, font=self.font)
-        self.preview_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        # 使用 Listbox 替代 ScrolledText，支持拖动排序
+        self.preview_listbox = tk.Listbox(
+            right_frame,
+            width=40,
+            height=5,
+            font=self.font,
+            selectmode=tk.EXTENDED,
+            activestyle=tk.NONE
+        )
+        self.preview_listbox.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # 绑定拖动排序事件
+        self.preview_listbox.bind("<Button-1>", self.on_drag_start)
+        self.preview_listbox.bind("<B1-Motion>", self.on_drag_motion)
+        self.preview_listbox.bind("<ButtonRelease-1>", self.on_drag_end)
 
         # 按钮框架
         btn_frame = tk.Frame(self.root, padx=10, pady=10)
@@ -232,11 +259,15 @@ class FileRenameApp:
 
         self.extract_title_btn = tk.Button(btn_frame, text="提取标题", font=self.font,
                                            command=self.extract_title)
-        self.extract_title_btn.pack_forget()  # 批量模式不需要提取标题按钮
+        self.extract_title_btn.pack_forget()
 
         self.execute_btn = tk.Button(btn_frame, text="执行重命名", font=self.font,
                                      command=self.execute_rename, state=tk.DISABLED)
         self.execute_btn.pack(side=tk.LEFT, padx=5)
+
+        self.remove_format_btn = tk.Button(btn_frame, text="取消格式", font=self.font,
+                                           command=self.remove_format, state=tk.DISABLED)
+        self.remove_format_btn.pack(side=tk.LEFT, padx=5)
 
         # 状态框架
         status_frame = tk.Frame(self.root, padx=10, pady=5)
@@ -250,6 +281,52 @@ class FileRenameApp:
         self.change_mode()
         print("[INFO] 界面组件加载完成")
 
+    def on_drag_start(self, event):
+        """开始拖动"""
+        widget = event.widget
+        self.drag_data["index"] = widget.nearest(event.y)
+        self.drag_data["item"] = widget.get(self.drag_data["index"])
+
+        # 高亮显示当前选中的项
+        widget.selection_clear(0, tk.END)
+        widget.selection_set(self.drag_data["index"])
+        widget.see(self.drag_data["index"])
+
+    def on_drag_motion(self, event):
+        """拖动过程中"""
+        widget = event.widget
+        index = widget.nearest(event.y)
+
+        if index != self.drag_data["index"]:
+            # 删除原位置的项
+            widget.delete(self.drag_data["index"])
+            # 在新位置插入项
+            widget.insert(index, self.drag_data["item"])
+            # 更新选中的索引
+            self.drag_data["index"] = index
+            # 更新高亮显示
+            widget.selection_clear(0, tk.END)
+            widget.selection_set(index)
+            widget.see(index)
+
+    def on_drag_end(self, event):
+        """拖动结束"""
+        widget = event.widget
+        new_index = widget.nearest(event.y)
+
+        # 如果是原始文件列表框，更新预览列表
+        if widget == self.original_files_listbox and self.preview_results:
+            # 获取新的文件顺序
+            new_files = [widget.get(i) for i in range(widget.size())]
+
+            # 更新文件列表
+            self.file_list = new_files
+
+            folder_path = self.path_entry.get()
+
+            # 重新生成预览结果，确保序号正确
+            self.generate_batch_preview(new_files, folder_path)
+
     def change_mode(self):
         self.current_mode = self.mode_var.get()
         print(f"[INFO] 切换到{self.current_mode}模式")
@@ -258,7 +335,7 @@ class FileRenameApp:
             self.is_single_file = False
             self.mode_label.config(text="批量处理模式")
             self.folder_btn.config(text="浏览文件夹", command=self.browse_folder)
-            self.extract_title_btn.pack_forget()  # 批量模式不需要提取标题按钮
+            self.extract_title_btn.pack_forget()
             self.original_label.config(text="原始文件列表:")
             self.preview_label.config(text="重命名预览:")
 
@@ -266,7 +343,7 @@ class FileRenameApp:
             self.is_single_file = True
             self.mode_label.config(text="单个文件模式")
             self.folder_btn.config(text="浏览文件", command=self.browse_file)
-            self.extract_title_btn.pack_forget()  # 单个文件模式不需要提取标题按钮
+            self.extract_title_btn.pack_forget()
             self.original_label.config(text="原始文件:")
             self.preview_label.config(text="重命名预览:")
 
@@ -274,11 +351,10 @@ class FileRenameApp:
             self.is_single_file = True
             self.mode_label.config(text="按标题重命名模式")
             self.folder_btn.config(text="浏览文件", command=self.browse_file)
-            self.extract_title_btn.pack(side=tk.LEFT, padx=5)  # 显示提取标题按钮
+            self.extract_title_btn.pack(side=tk.LEFT, padx=5)
             self.original_label.config(text="原始文件名:")
             self.preview_label.config(text="提取结果:")
 
-        # 显示预设框架和相关选项
         self.preset_frame.pack(fill=tk.X)
         self.update_numbering_frame_visibility()
         self.update_date_format_frame_visibility()
@@ -286,9 +362,10 @@ class FileRenameApp:
         self.extension_frame.pack(fill=tk.X)
 
         self.path_entry.delete(0, tk.END)
-        self.original_files_text.delete(1.0, tk.END)
-        self.preview_text.delete(1.0, tk.END)
+        self.original_files_listbox.delete(0, tk.END)
+        self.preview_listbox.delete(0, tk.END)
         self.execute_btn.config(state=tk.DISABLED)
+        self.remove_format_btn.config(state=tk.DISABLED)
         self.status_var.set("就绪")
         print("[INFO] 模式切换完成")
 
@@ -317,36 +394,28 @@ class FileRenameApp:
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def on_numbering_change(self, event=None):
         """起始序号或数字位数变化时的处理"""
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def on_date_format_change(self, event=None):
         """日期格式变化时的处理"""
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def on_ignore_existing_change(self):
         """忽略已符合格式的文件选项变化时的处理"""
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def browse_folder(self):
         print("[INFO] 打开文件/文件夹选择对话框")
@@ -360,7 +429,7 @@ class FileRenameApp:
 
                 # 批量模式下自动显示文件列表
                 self.show_batch_files(folder_selected)
-        else:  # single 或 title 模式
+        else:
             file_selected = filedialog.askopenfilename(
                 filetypes=[("所有文件", "*.*")]
             )
@@ -392,26 +461,26 @@ class FileRenameApp:
 
     def show_batch_files(self, folder_path):
         """显示批量模式下的文件列表"""
-        self.original_files_text.delete(1.0, tk.END)
+        self.original_files_listbox.delete(0, tk.END)
         try:
             files = os.listdir(folder_path)
-            files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+            self.file_list = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
 
-            if not files:
-                self.original_files_text.insert(tk.END, "所选文件夹为空")
+            if not self.file_list:
+                self.original_files_listbox.insert(tk.END, "所选文件夹为空")
                 return
 
-            for file in files[:100]:  # 限制显示数量
-                self.original_files_text.insert(tk.END, file + "\n")
+            for file in self.file_list[:100]:
+                self.original_files_listbox.insert(tk.END, file)
 
-            if len(files) > 100:
-                self.original_files_text.insert(tk.END, f"... 共{len(files)}个文件")
+            if len(self.file_list) > 100:
+                self.original_files_listbox.insert(tk.END, f"... 共{len(self.file_list)}个文件")
 
             # 自动生成预览
-            self.generate_batch_preview(files, folder_path)
+            self.generate_batch_preview(self.file_list, folder_path)
 
         except Exception as e:
-            self.original_files_text.insert(tk.END, f"无法读取文件夹内容: {str(e)}")
+            self.original_files_listbox.insert(tk.END, f"无法读取文件夹内容: {str(e)}")
 
     def parse_date_format(self, format_str):
         """将用户友好的日期格式转换为Python的strftime格式"""
@@ -425,16 +494,13 @@ class FileRenameApp:
 
     def is_sequence_filename_format(self, filename):
         """检查文件名是否符合'序号_原文件名_日期'格式"""
-        # 获取文件名部分（不含扩展名）
         base_name, _ = os.path.splitext(filename)
 
-        # 检查是否符合格式：数字_文本_日期
-        # 匹配模式：1-9位数字 + 下划线 + 任意文本 + 下划线 + 日期格式
         patterns = [
-            r'^\d{1,9}_.+_\d{4}\d{2}\d{2}$',  # YYYYMMDD
-            r'^\d{1,9}_.+_\d{4}-\d{2}-\d{2}$',  # YYYY-MM-DD
-            r'^\d{1,9}_.+_\d{2}\d{2}\d{2}$',  # YYMMDD
-            r'^\d{1,9}_.+_\d{2}-\d{2}-\d{2}$',  # YY-MM-DD
+            r'^\d{1,9}_.+_\d{4}\d{2}\d{2}$',
+            r'^\d{1,9}_.+_\d{4}-\d{2}-\d{2}$',
+            r'^\d{1,9}_.+_\d{2}\d{2}\d{2}$',
+            r'^\d{1,9}_.+_\d{2}-\d{2}-\d{2}$',
         ]
 
         for pattern in patterns:
@@ -461,7 +527,7 @@ class FileRenameApp:
 
     def generate_batch_preview(self, files, folder_path):
         """生成批量重命名预览"""
-        self.preview_text.delete(1.0, tk.END)
+        self.preview_listbox.delete(0, tk.END)
 
         prefix = self.title_prefix_var.get().strip()
         suffix = self.title_suffix_var.get().strip()
@@ -473,25 +539,22 @@ class FileRenameApp:
 
         renamed_files = []
 
-        # 如果启用了忽略已有格式，先确定起始序号
+        # 重置序号计数器
         start_num = self.start_num_var.get()
         if ignore_existing and preset == "序号_原文件名_日期":
             start_num = self.get_next_sequence_number(files)
             print(f"[INFO] 已有格式文件检测完成，起始序号设置为: {start_num}")
 
-        # 处理每个文件
         seq_num = start_num
         digits = self.digits_var.get()
 
         for file in files:
             base_name, ext = os.path.splitext(file)
 
-            # 如果启用了忽略已有格式且文件已经符合格式，则保持不变
             if ignore_existing and preset == "序号_原文件名_日期" and self.is_sequence_filename_format(file):
                 new_name = file
                 print(f"[INFO] 保留已有格式文件: {file}")
             else:
-                # 应用预设命名格式
                 new_base_name = base_name
                 if preset == "序号模式 (001, 002...)":
                     new_base_name = f"{seq_num:0{digits}d}"
@@ -508,13 +571,11 @@ class FileRenameApp:
                 elif preset == "序号_原文件名_日期":
                     new_base_name = f"{seq_num:0{digits}d}_{base_name}_{current_date}"
 
-                # 应用前缀和后缀
                 if prefix:
                     new_base_name = prefix + new_base_name
                 if suffix:
                     new_base_name += suffix
 
-                # 应用新的文件后缀
                 if target_ext:
                     new_ext = f".{target_ext}"
                 else:
@@ -522,50 +583,44 @@ class FileRenameApp:
 
                 new_name = new_base_name + new_ext
 
-                # 仅在需要递增序号的预设下增加序号
+                # 只有在需要使用序号的预设模式下才增加序号
                 if preset in ["序号模式 (001, 002...)", "序号+原文件名", "原文件名+序号", "序号_原文件名_日期"]:
                     seq_num += 1
 
             renamed_files.append((file, new_name))
 
-            # 只显示前100个预览
             if len(renamed_files) <= 100:
-                self.preview_text.insert(tk.END, f"{file} → {new_name}\n")
+                self.preview_listbox.insert(tk.END, f"{file} → {new_name}")
 
         if len(files) > 100:
-            self.preview_text.insert(tk.END, f"... 共{len(files)}个文件将被重命名")
+            self.preview_listbox.insert(tk.END, f"... 共{len(files)}个文件将被重命名")
 
         self.preview_results = renamed_files
         self.execute_btn.config(state=tk.NORMAL if renamed_files else tk.DISABLED)
+        self.remove_format_btn.config(state=tk.NORMAL if renamed_files else tk.DISABLED)
         print(f"[INFO] 生成批量重命名预览，{len(renamed_files)}个文件")
 
     def on_extension_change(self, event=None):
         """下拉菜单选择变化时的处理"""
         selected = self.extension_var.get()
         if selected != "不修改":
-            self.custom_ext_var.set("")  # 清空自定义输入框
+            self.custom_ext_var.set("")
 
-        # 如果是批量模式，自动更新预览
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def on_custom_ext_change(self, event=None):
         """自定义后缀输入变化时的处理"""
         custom_ext = self.custom_ext_var.get().strip()
         if custom_ext:
-            self.extension_var.set("不修改")  # 取消下拉菜单选择
+            self.extension_var.set("不修改")
 
-        # 如果是批量模式，自动更新预览
         if self.current_mode == "batch" and self.path_entry.get():
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
-                self.generate_batch_preview(files, folder_path)
+                self.generate_batch_preview(self.file_list, folder_path)
 
     def get_target_extension(self):
         """获取目标文件后缀"""
@@ -575,7 +630,6 @@ class FileRenameApp:
         if selected_ext != "不修改":
             return selected_ext
         elif custom_ext:
-            # 清理自定义后缀，移除可能的点号
             return custom_ext.replace('.', '')
         else:
             return None
@@ -586,13 +640,11 @@ class FileRenameApp:
             print(f"[INFO] 开始从Word文档提取标题: {file_path}")
             doc = docx.Document(file_path)
 
-            # 方法1：优先从文档属性提取
             if doc.core_properties.title:
                 title = doc.core_properties.title.strip()
                 print(f"[INFO] 从文档属性提取标题: {title}")
                 return title
 
-            # 方法2：针对"中华人民共和国劳动合同法"文档的强化提取
             for para in doc.paragraphs[:10]:
                 text = para.text.strip()
                 if ("中华人民共和国" in text or "法" in text) and len(text) < 60:
@@ -600,7 +652,6 @@ class FileRenameApp:
                         print(f"[INFO] 从正文提取标题: {text}")
                         return text[:40]
 
-            # 方法3：常规标题提取逻辑
             title_candidates = []
 
             for para in doc.paragraphs:
@@ -687,10 +738,10 @@ class FileRenameApp:
         file_ext = os.path.splitext(file_path)[1].lower()
         filename = os.path.basename(file_path)
 
-        self.original_files_text.delete(1.0, tk.END)
-        self.original_files_text.insert(tk.END, filename)
+        self.original_files_listbox.delete(0, tk.END)
+        self.original_files_listbox.insert(tk.END, filename)
 
-        self.preview_text.delete(1.0, tk.END)
+        self.preview_listbox.delete(0, tk.END)
 
         try:
             self.status_var.set(f"正在提取标题: {filename}")
@@ -705,9 +756,10 @@ class FileRenameApp:
                 print(f"[ERROR] 不支持的文件格式: {file_ext}")
 
             if title.startswith("提取失败"):
-                self.preview_text.insert(tk.END, f"错误: {title}\n", "error")
+                self.preview_listbox.insert(tk.END, f"错误: {title}")
                 self.status_var.set("提取失败")
                 self.execute_btn.config(state=tk.DISABLED)
+                self.remove_format_btn.config(state=tk.DISABLED)
                 print(f"[ERROR] 标题提取失败: {title}")
                 return
 
@@ -719,14 +771,12 @@ class FileRenameApp:
             prefix = self.title_prefix_var.get().strip()
             suffix = self.title_suffix_var.get().strip()
 
-            # 应用文件后缀修改
             target_ext = self.get_target_extension()
             if target_ext:
                 new_ext = f".{target_ext}"
             else:
                 new_ext = os.path.splitext(filename)[1]
 
-            # 应用预设命名格式（针对单个文件）
             preset = self.preset_var.get()
             date_format = self.parse_date_format(self.date_format_var.get())
             current_date = datetime.now().strftime(date_format)
@@ -748,7 +798,6 @@ class FileRenameApp:
             else:
                 new_base_name = valid_title
 
-            # 应用前缀和后缀
             if prefix:
                 new_base_name = prefix + new_base_name
             if suffix:
@@ -756,15 +805,16 @@ class FileRenameApp:
 
             new_filename = new_base_name + new_ext
 
-            self.preview_text.insert(tk.END, f"原始文件名: {filename}\n\n", "original")
-            self.preview_text.insert(tk.END, f"提取的标题: {title}\n\n", "title")
-            self.preview_text.insert(tk.END, f"新文件名: {new_filename}\n", "new")
+            self.preview_listbox.insert(tk.END, f"原始文件名: {filename}\n")
+            self.preview_listbox.insert(tk.END, f"提取的标题: {title}\n")
+            self.preview_listbox.insert(tk.END, f"新文件名: {new_filename}")
 
             self.status_var.set(f"标题提取完成: {title}")
             self.preview_results = [(filename, new_filename)]
             self.file_path = file_path
 
             self.execute_btn.config(state=tk.NORMAL)
+            self.remove_format_btn.config(state=tk.NORMAL)
             print(f"[INFO] 标题提取成功，新文件名: {new_filename}")
 
             if self.auto_rename_title_var.get():
@@ -772,10 +822,11 @@ class FileRenameApp:
                 self.execute_rename()
 
         except Exception as e:
-            self.preview_text.insert(tk.END, f"错误: {str(e)}\n", "error")
+            self.preview_listbox.insert(tk.END, f"错误: {str(e)}")
             self.status_var.set(f"提取出错: {str(e)}")
             traceback.print_exc()
             self.execute_btn.config(state=tk.DISABLED)
+            self.remove_format_btn.config(state=tk.DISABLED)
             print(f"[ERROR] 提取标题过程中出错: {str(e)}")
 
     def execute_rename(self):
@@ -798,53 +849,132 @@ class FileRenameApp:
                     old_path = os.path.join(folder_path, old_name)
                     new_path = os.path.join(folder_path, new_name)
 
-                    # 如果新旧文件名相同，跳过重命名
                     if old_name == new_name:
                         continue
 
                     try:
                         os.rename(old_path, new_path)
                         renamed_count += 1
+                        print(f"[INFO] 重命名成功: {old_name} → {new_name}")
                     except Exception as e:
-                        failed_files.append(f"{old_name} → {new_name}: {str(e)}")
+                        failed_files.append((old_name, str(e)))
+                        print(f"[ERROR] 重命名失败: {old_name}, 错误信息: {str(e)}")
 
-                success_msg = f"成功重命名 {renamed_count} 个文件"
+                if renamed_count > 0:
+                    messagebox.showinfo("提示", f"{renamed_count}个文件重命名成功")
                 if failed_files:
-                    success_msg += f"\n\n{len(failed_files)} 个文件重命名失败:"
-                    for fail in failed_files[:10]:  # 只显示前10个失败
-                        success_msg += f"\n{fail}"
-                    if len(failed_files) > 10:
-                        success_msg += f"\n... 等{len(failed_files)}个文件"
+                    error_msg = "\n".join([f"{old_name}: {error}" for old_name, error in failed_files])
+                    messagebox.showerror("错误", f"以下文件重命名失败:\n{error_msg}")
 
-                messagebox.showinfo("成功", success_msg)
-                self.status_var.set(f"批量重命名完成: {renamed_count}个文件成功")
-                print(f"[INFO] 批量重命名完成，成功: {renamed_count}，失败: {len(failed_files)}")
-
-                # 刷新文件列表
+                self.status_var.set("重命名完成")
                 self.show_batch_files(folder_path)
+                self.preview_results = []
+                self.execute_btn.config(state=tk.DISABLED)
+                self.remove_format_btn.config(state=tk.DISABLED)
 
-            else:  # 单文件模式
-                old_name, new_name = self.preview_results[0]
-                old_path = self.file_path
+            else:
+                old_path = self.path_entry.get()
+                old_name = os.path.basename(old_path)
+                new_name = self.preview_results[0][1]
                 new_path = os.path.join(os.path.dirname(old_path), new_name)
 
-                os.rename(old_path, new_path)
-                self.preview_text.insert(tk.END, f"\n\n重命名成功: {old_name} → {new_name}\n", "success")
-
-                self.status_var.set(f"重命名完成: {new_name}")
-                messagebox.showinfo("成功", f"已成功重命名文件:\n{old_name} → {new_name}")
-
-                self.path_entry.delete(0, tk.END)
-                self.path_entry.insert(0, new_path)
-                self.original_files_text.delete(1.0, tk.END)
-                self.original_files_text.insert(tk.END, new_name)
-
-                print(f"[INFO] 文件重命名成功: {old_path} → {new_path}")
+                try:
+                    os.rename(old_path, new_path)
+                    messagebox.showinfo("提示", f"文件重命名成功: {old_name} → {new_name}")
+                    self.status_var.set("重命名完成")
+                    self.path_entry.delete(0, tk.END)
+                    self.original_files_listbox.delete(0, tk.END)
+                    self.preview_listbox.delete(0, tk.END)
+                    self.preview_results = []
+                    self.execute_btn.config(state=tk.DISABLED)
+                    self.remove_format_btn.config(state=tk.DISABLED)
+                    print(f"[INFO] 重命名成功: {old_name} → {new_name}")
+                except Exception as e:
+                    messagebox.showerror("错误", f"文件重命名失败: {str(e)}")
+                    self.status_var.set(f"重命名失败: {str(e)}")
+                    print(f"[ERROR] 重命名失败: {old_name}, 错误信息: {str(e)}")
 
         except Exception as e:
-            messagebox.showerror("错误", f"执行时出错: {str(e)}")
-            self.status_var.set("操作失败")
-            print(f"[ERROR] 文件重命名失败: {str(e)}")
+            messagebox.showerror("错误", f"执行重命名时出错: {str(e)}")
+            self.status_var.set(f"执行重命名时出错: {str(e)}")
+            traceback.print_exc()
+            print(f"[ERROR] 执行重命名时出错: {str(e)}")
+
+    def remove_format(self):
+        if self.current_mode == "batch":
+            folder_path = self.path_entry.get()
+            if not os.path.isdir(folder_path):
+                messagebox.showerror("错误", "请选择有效的文件夹路径")
+                return
+
+            files = os.listdir(folder_path)
+            renamed_count = 0
+            failed_files = []
+
+            for file in files:
+                base_name, ext = os.path.splitext(file)
+
+                if self.is_sequence_filename_format(file):
+                    parts = base_name.split('_')
+                    if len(parts) >= 3:
+                        new_base_name = '_'.join(parts[1:-1])
+                        new_name = new_base_name + ext
+                        old_path = os.path.join(folder_path, file)
+                        new_path = os.path.join(folder_path, new_name)
+
+                        try:
+                            os.rename(old_path, new_path)
+                            renamed_count += 1
+                            print(f"[INFO] 取消格式成功: {file} → {new_name}")
+                        except Exception as e:
+                            failed_files.append((file, str(e)))
+                            print(f"[ERROR] 取消格式失败: {file}, 错误信息: {str(e)}")
+
+            if renamed_count > 0:
+                messagebox.showinfo("提示", f"{renamed_count}个文件取消格式成功")
+            if failed_files:
+                error_msg = "\n".join([f"{old_name}: {error}" for old_name, error in failed_files])
+                messagebox.showerror("错误", f"以下文件取消格式失败:\n{error_msg}")
+
+            self.status_var.set("取消格式完成")
+            self.show_batch_files(folder_path)
+            self.preview_results = []
+            self.execute_btn.config(state=tk.DISABLED)
+            self.remove_format_btn.config(state=tk.DISABLED)
+
+        else:
+            file_path = self.path_entry.get()
+            if not os.path.exists(file_path):
+                messagebox.showerror("错误", "文件不存在")
+                return
+
+            file_name = os.path.basename(file_path)
+            base_name, ext = os.path.splitext(file_name)
+
+            if self.is_sequence_filename_format(file_name):
+                parts = base_name.split('_')
+                if len(parts) >= 3:
+                    new_base_name = '_'.join(parts[1:-1])
+                    new_name = new_base_name + ext
+                    new_path = os.path.join(os.path.dirname(file_path), new_name)
+
+                    try:
+                        os.rename(file_path, new_path)
+                        messagebox.showinfo("提示", f"文件取消格式成功: {file_name} → {new_name}")
+                        self.status_var.set("取消格式完成")
+                        self.path_entry.delete(0, tk.END)
+                        self.original_files_listbox.delete(0, tk.END)
+                        self.preview_listbox.delete(0, tk.END)
+                        self.preview_results = []
+                        self.execute_btn.config(state=tk.DISABLED)
+                        self.remove_format_btn.config(state=tk.DISABLED)
+                        print(f"[INFO] 取消格式成功: {file_name} → {new_name}")
+                    except Exception as e:
+                        messagebox.showerror("错误", f"文件取消格式失败: {str(e)}")
+                        self.status_var.set(f"取消格式失败: {str(e)}")
+                        print(f"[ERROR] 取消格式失败: {file_name}, 错误信息: {str(e)}")
+            else:
+                messagebox.showinfo("提示", "文件不符合序号_原文件名_日期格式，无需取消格式")
 
 
 if __name__ == "__main__":
