@@ -8,6 +8,8 @@ from datetime import datetime
 import docx
 from PyPDF2 import PdfReader
 import traceback
+import platform
+import psutil  # 新增依赖，用于检测文件是否被打开
 
 
 def resource_path(relative_path):
@@ -32,6 +34,7 @@ class FileRenameApp:
         self.current_mode = "batch"  # 默认选择批量重命名
         self.drag_data = {"index": None, "item": None}  # 用于拖动排序的数据
         self.file_list = []  # 存储当前文件列表
+        self.open_files_check_var = tk.BooleanVar(value=True)  # 新增：是否检查打开的文件
 
         # 创建界面元素
         self.create_widgets()
@@ -146,6 +149,15 @@ class FileRenameApp:
             command=self.on_ignore_existing_change
         )
         ignore_check.pack(side=tk.LEFT, padx=10)
+
+        # 检查打开文件的选项
+        open_files_check = tk.Checkbutton(
+            self.date_format_frame,
+            text="检查已打开的文件",
+            variable=self.open_files_check_var,
+            font=self.font
+        )
+        open_files_check.pack(side=tk.LEFT, padx=10)
 
         # 标题重命名选项框架
         self.title_options_frame = tk.Frame(self.root, padx=10, pady=5)
@@ -417,6 +429,30 @@ class FileRenameApp:
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
 
+    def is_hidden_file(self, file_path):
+        """检查文件是否为隐藏文件"""
+        file_name = os.path.basename(file_path)
+
+        # 检查以点开头的文件 (Unix风格)
+        if file_name.startswith('.'):
+            return True
+
+        # Windows系统检查隐藏属性
+        if platform.system() == 'Windows':
+            try:
+                import win32api, win32con
+                attrs = win32api.GetFileAttributes(file_path)
+                return attrs & win32con.FILE_ATTRIBUTE_HIDDEN
+            except ImportError:
+                # 如果没有安装pywin32，使用os.stat
+                try:
+                    import stat
+                    return bool(os.stat(file_path).st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
+                except (AttributeError, ImportError):
+                    pass
+
+        return False
+
     def browse_folder(self):
         print("[INFO] 打开文件/文件夹选择对话框")
         if self.current_mode == "batch":
@@ -460,11 +496,16 @@ class FileRenameApp:
             print(f"[INFO] 选择文件: {file_selected}")
 
     def show_batch_files(self, folder_path):
-        """显示批量模式下的文件列表"""
+        """显示批量模式下的文件列表，过滤隐藏文件"""
         self.original_files_listbox.delete(0, tk.END)
         try:
-            files = os.listdir(folder_path)
-            self.file_list = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+            all_files = os.listdir(folder_path)
+            # 过滤隐藏文件
+            self.file_list = [
+                f for f in all_files
+                if os.path.isfile(os.path.join(folder_path, f))
+                   and not self.is_hidden_file(os.path.join(folder_path, f))
+            ]
 
             if not self.file_list:
                 self.original_files_listbox.insert(tk.END, "所选文件夹为空")
@@ -829,11 +870,42 @@ class FileRenameApp:
             self.remove_format_btn.config(state=tk.DISABLED)
             print(f"[ERROR] 提取标题过程中出错: {str(e)}")
 
+    def is_file_open(self, file_path):
+        """检查文件是否被其他进程打开"""
+        if not self.open_files_check_var.get():
+            return False
+
+        try:
+            # 尝试以写入模式打开文件，如果失败则说明文件被占用
+            with open(file_path, 'a'):
+                return False
+        except IOError:
+            return True
+
     def execute_rename(self):
         if not self.preview_results:
             messagebox.showinfo("提示", "没有可执行的重命名操作")
             print("[INFO] 没有可执行的重命名操作")
             return
+
+        # 检查是否有文件被打开
+        open_files = []
+        if self.open_files_check_var.get():
+            for old_name, new_name in self.preview_results:
+                if self.current_mode == "batch":
+                    file_path = os.path.join(self.path_entry.get(), old_name)
+                else:
+                    file_path = self.path_entry.get()
+
+                if self.is_file_open(file_path):
+                    open_files.append(old_name)
+
+            if open_files:
+                msg = "以下文件正在被其他程序使用，重命名可能会失败:\n" + "\n".join(open_files)
+                msg += "\n\n请关闭这些文件后再尝试重命名，是否继续?"
+                if not messagebox.askyesno("文件正在使用", msg):
+                    self.status_var.set("操作已取消")
+                    return
 
         try:
             if self.current_mode == "batch":
@@ -979,6 +1051,14 @@ class FileRenameApp:
 
 if __name__ == "__main__":
     print("[INFO] 程序启动中...")
+
+    # 检查psutil依赖
+    try:
+        import psutil
+    except ImportError:
+        print("[WARNING] 未安装psutil库，文件打开检测功能将受限")
+        print("请安装依赖: pip install psutil")
+
     root = tk.Tk()
     app = FileRenameApp(root)
     print("[INFO] 程序初始化完成，进入主事件循环")
