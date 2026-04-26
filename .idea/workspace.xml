@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明">
+    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="初始化上传项目">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,6 +21,18 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ZealotSarah&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/ZealotSarah/Auto_add_Number.git",
+    "accountId": "67ad8e82-2b67-494f-9878-5a83c63130b3"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -30,22 +42,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.main.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "develop__1",
-    "last_opened_file_path": "E:/tools/自动添加序号",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.main.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop__1&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/tools/自动添加序号&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="自动添加序号" />
@@ -109,7 +121,8 @@
       <workItem from="1754320358265" duration="182000" />
       <workItem from="1763381159659" duration="3497000" />
       <workItem from="1764766738090" duration="76000" />
-      <workItem from="1777192433998" duration="2535000" />
+      <workItem from="1777192433998" duration="3196000" />
+      <workItem from="1777196096742" duration="1266000" />
     </task>
     <task id="LOCAL-00001" summary="1、双模式支持：&#10;新增 &quot;浏览文件&quot; 按钮，支持选择单个文件&#10;界面顶部显示当前模式（批量处理 / 单个文件）&#10;通过is_single_file标志区分两种模式&#10;2、界面调整：&#10;将 &quot;文件夹路径&quot; 改为 &quot;文件 / 文件夹路径&quot;&#10;添加 &quot;浏览文件&quot; 按钮，与 &quot;浏览文件夹&quot; 并列&#10;增加模式指示器，显示当前操作模式&#10;3、逻辑修改：&#10;preview_rename和execute_rename方法同时支持文件和文件夹">
       <option name="closed" value="true" />
@@ -223,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763384460608</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="初始化上传项目">
+      <option name="closed" value="true" />
+      <created>1777195506045</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1777195506045</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -266,7 +287,8 @@
     <MESSAGE value="1、默认选择批量重命名的选项：&#10;（1）在__init__方法中，将self.current_mode初始化为&quot;batch&quot;。&#10;（2）在创建Radiobutton时，将self.mode_var的初始值设置为&quot;batch&quot;。&#10;2、批量重命名下使用预设的时候，数字位数默认为 2 位：&#10;（1）在创建self.digits_var时，将其初始值设置为2。&#10;3、修改数字位数和起始序号后，重命名预览框需要立即更新：&#10;（1）为起始序号和数字位数的输入框绑定&lt;KeyRelease&gt;事件，当输入框内容发生变化时，调用on_numbering_change方法。&#10;（2）在on_numbering_change方法中，如果当前模式为批量重命名且已选择文件夹路径，则重新生成批量重命名预览。&#10;4、日期格式变化时实时更新预览：&#10;（1）为日期格式下拉菜单添加了&lt;&lt;ComboboxSelected&gt;&gt;事件绑定，调用on_date_format_change方法。&#10;（2）在on_date_format_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。&#10;5、&quot;忽略已符合格式的文件&quot; 选项变化时实时更新预览：&#10;（1）为 &quot;忽略已符合格式的文件&quot; 复选框添加了command事件绑定，调用on_ignore_existing_change方法。&#10;（2）在on_ignore_existing_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。" />
     <MESSAGE value="1、添加取消预设格式选项；&#10;2、添加预览窗口随意更改顺序功能。" />
     <MESSAGE value="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明" />
-    <option name="LAST_COMMIT_MESSAGE" value="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明" />
+    <MESSAGE value="初始化上传项目" />
+    <option name="LAST_COMMIT_MESSAGE" value="初始化上传项目" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1748960914820" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
