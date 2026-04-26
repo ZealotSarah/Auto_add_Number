@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="1、增强 Word 标题提取逻辑&#10;添加针对法律类文档的特殊处理（检测 &quot;中华人民共和国&quot; 和 &quot;法&quot; 关键词）&#10;优化标题筛选规则，排除目录、章节标题等干扰项&#10;增加多层级标题提取策略，提高成功率&#10;2、PDF 标题提取优化&#10;改进 PDF 文本解析逻辑，更准确提取首行标题&#10;添加文本长度和内容质量检查，避免提取无效标题&#10;3、日志系统完善&#10;增加详细的标题提取过程日志&#10;区分不同类型的日志信息（INFO/ERROR）&#10;记录关键操作的执行情况">
+    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -21,9 +21,6 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="PerforceDirect.Settings">
-    <option name="CHARSET" value="none" />
-  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -39,12 +36,13 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "develop__1",
+    "last_opened_file_path": "E:/tools/自动添加序号",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.gitee.ui.GiteeSettingsConfigurable",
+    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -104,7 +102,14 @@
       <workItem from="1748998752846" duration="6156000" />
       <workItem from="1749009375246" duration="15000" />
       <workItem from="1749451878583" duration="361000" />
-      <workItem from="1749452291380" duration="295000" />
+      <workItem from="1749452291380" duration="4574000" />
+      <workItem from="1749479280131" duration="249000" />
+      <workItem from="1749566127423" duration="2954000" />
+      <workItem from="1753688337891" duration="1654000" />
+      <workItem from="1754320358265" duration="182000" />
+      <workItem from="1763381159659" duration="3497000" />
+      <workItem from="1764766738090" duration="76000" />
+      <workItem from="1777192433998" duration="2535000" />
     </task>
     <task id="LOCAL-00001" summary="1、双模式支持：&#10;新增 &quot;浏览文件&quot; 按钮，支持选择单个文件&#10;界面顶部显示当前模式（批量处理 / 单个文件）&#10;通过is_single_file标志区分两种模式&#10;2、界面调整：&#10;将 &quot;文件夹路径&quot; 改为 &quot;文件 / 文件夹路径&quot;&#10;添加 &quot;浏览文件&quot; 按钮，与 &quot;浏览文件夹&quot; 并列&#10;增加模式指示器，显示当前操作模式&#10;3、逻辑修改：&#10;preview_rename和execute_rename方法同时支持文件和文件夹">
       <option name="closed" value="true" />
@@ -162,7 +167,63 @@
       <option name="project" value="LOCAL" />
       <updated>1749004659094</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="1、后缀修改界面&#10;（1）新增 &quot;修改文件后缀&quot; 区域，包含常用格式下拉菜单和自定义输入框&#10;（2）下拉菜单包含 txt、pdf、docx 等 20 多种常用格式&#10;（3）自定义输入框允许输入任意后缀（自动处理点号）&#10;2、交互逻辑&#10;（1）下拉菜单和自定义输入框互斥，选择一个会清空另一个&#10;（2）批量模式下，选择后缀或输入自定义后缀会自动更新预览&#10;（3）单文件模式下，提取标题后应用后缀修改规则&#10;3、文件处理逻辑&#10;（1）新增get_target_extension()方法统一处理后缀获取&#10;（2）在标题提取和批量预览生成中应用后缀修改规则&#10;（3）重命名时自动应用选定的后缀">
+      <option name="closed" value="true" />
+      <created>1749452765467</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1749452765467</updated>
+    </task>
+    <task id="LOCAL-00009" summary="1、控件可见性调整&#10;（1）在create_widgets()方法中，确保标题选项框架和后缀修改框架初始化为可见&#10;（2）修改change_mode()方法，不再隐藏这两个框架，仅调整与当前模式无关的特定控件&#10;2、模式切换逻辑优化&#10;（1）仅隐藏 / 显示与当前模式直接相关的控件（如提取标题按钮）&#10;（2）保持通用选项（前缀 / 后缀 / 自动重命名 / 后缀修改）对所有模式可见&#10;3、批量模式适配&#10;（1）改进批量模式下的预览生成逻辑，确保正确应用前缀 / 后缀 / 文件格式修改">
+      <option name="closed" value="true" />
+      <created>1749566790144</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1749566790144</updated>
+    </task>
+    <task id="LOCAL-00010" summary="1、预设命名格式&#10;（1）添加了下拉菜单选择常用命名模式&#10;（2）包含序号模式、日期模式、时间戳模式等 6 种预设&#10;2、序号设置&#10;（1）当选择需要序号的预设时，自动显示序号设置选项&#10;（2）可以自定义起始序号和数字位数&#10;3、整合逻辑&#10;（1）在批量重命名和单文件重命名中都应用预设格式&#10;（2）预设格式与前缀 / 后缀 / 文件后缀修改功能兼容&#10;4、预览功能&#10;（1）实时显示应用预设格式后的重命名效果&#10;（2）批量模式下自动更新所有文件的预览">
+      <option name="closed" value="true" />
+      <created>1749567159837</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1749567159837</updated>
+    </task>
+    <task id="LOCAL-00011" summary="1、序号_原文件名_日期格式&#10;（1）添加了新的预设选项 &quot;序号_原文件名_日期&quot;&#10;（2）支持多种日期格式（YYYYMMDD、YYYY-MM-DD 等）&#10;2、智能识别已有格式&#10;（1）添加 &quot;忽略已符合格式的文件&quot; 选项&#10;（2）自动检测文件名是否符合 &quot;序号_原文件名_日期&quot; 格式&#10;（3）对已符合格式的文件保持不变，只处理不符合格式的文件&#10;3、自动序号管理&#10;（1）当启用 &quot;忽略已符合格式的文件&quot; 时，自动检测文件夹中已有格式文件的最大序号&#10;（2）新生成的文件名从最大序号 + 1 开始，确保序号连续性&#10;4、增强的预览功能&#10;（1）预览界面清晰显示每个文件的处理情况&#10;（2）对保持不变的文件有明确标识">
+      <option name="closed" value="true" />
+      <created>1749567552892</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1749567552892</updated>
+    </task>
+    <task id="LOCAL-00012" summary="1、默认选择批量重命名的选项：&#10;（1）在__init__方法中，将self.current_mode初始化为&quot;batch&quot;。&#10;（2）在创建Radiobutton时，将self.mode_var的初始值设置为&quot;batch&quot;。&#10;2、批量重命名下使用预设的时候，数字位数默认为 2 位：&#10;（1）在创建self.digits_var时，将其初始值设置为2。&#10;3、修改数字位数和起始序号后，重命名预览框需要立即更新：&#10;（1）为起始序号和数字位数的输入框绑定&lt;KeyRelease&gt;事件，当输入框内容发生变化时，调用on_numbering_change方法。&#10;（2）在on_numbering_change方法中，如果当前模式为批量重命名且已选择文件夹路径，则重新生成批量重命名预览。&#10;4、日期格式变化时实时更新预览：&#10;（1）为日期格式下拉菜单添加了&lt;&lt;ComboboxSelected&gt;&gt;事件绑定，调用on_date_format_change方法。&#10;（2）在on_date_format_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。&#10;5、&quot;忽略已符合格式的文件&quot; 选项变化时实时更新预览：&#10;（1）为 &quot;忽略已符合格式的文件&quot; 复选框添加了command事件绑定，调用on_ignore_existing_change方法。&#10;（2）在on_ignore_existing_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。">
+      <option name="closed" value="true" />
+      <created>1749569132972</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1749569132972</updated>
+    </task>
+    <task id="LOCAL-00013" summary="1、添加取消预设格式选项；&#10;2、添加预览窗口随意更改顺序功能。">
+      <option name="closed" value="true" />
+      <created>1753689878584</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1753689878585</updated>
+    </task>
+    <task id="LOCAL-00014" summary="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明">
+      <option name="closed" value="true" />
+      <created>1763384460608</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1763384460608</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -173,7 +234,19 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
@@ -186,7 +259,14 @@
     <MESSAGE value="代码强化了 Word 文档的标题提取逻辑，优先从文档属性提取，若失败则依次尝试标题样式、正文段落等策略，确保能提取到文档首行作为标题。" />
     <MESSAGE value="1、恢复日志输出&#10;在关键函数和操作点添加了详细的日志输出，包括：&#10;（1）程序启动和初始化&#10;（2）模式切换&#10;（3）文件选择&#10;（4）标题提取过程（包括从 Word/PDF 提取的细节）&#10;（5）重命名操作&#10;（6）错误处理&#10;2、日志格式优化&#10;使用[INFO]和[ERROR]前缀区分不同类型的日志，便于调试时快速定位问题。&#10;3、保持原有功能不变&#10;修复了自动重命名的问题（默认关闭），同时保留了所有原有功能。" />
     <MESSAGE value="1、增强 Word 标题提取逻辑&#10;添加针对法律类文档的特殊处理（检测 &quot;中华人民共和国&quot; 和 &quot;法&quot; 关键词）&#10;优化标题筛选规则，排除目录、章节标题等干扰项&#10;增加多层级标题提取策略，提高成功率&#10;2、PDF 标题提取优化&#10;改进 PDF 文本解析逻辑，更准确提取首行标题&#10;添加文本长度和内容质量检查，避免提取无效标题&#10;3、日志系统完善&#10;增加详细的标题提取过程日志&#10;区分不同类型的日志信息（INFO/ERROR）&#10;记录关键操作的执行情况" />
-    <option name="LAST_COMMIT_MESSAGE" value="1、增强 Word 标题提取逻辑&#10;添加针对法律类文档的特殊处理（检测 &quot;中华人民共和国&quot; 和 &quot;法&quot; 关键词）&#10;优化标题筛选规则，排除目录、章节标题等干扰项&#10;增加多层级标题提取策略，提高成功率&#10;2、PDF 标题提取优化&#10;改进 PDF 文本解析逻辑，更准确提取首行标题&#10;添加文本长度和内容质量检查，避免提取无效标题&#10;3、日志系统完善&#10;增加详细的标题提取过程日志&#10;区分不同类型的日志信息（INFO/ERROR）&#10;记录关键操作的执行情况" />
+    <MESSAGE value="1、后缀修改界面&#10;（1）新增 &quot;修改文件后缀&quot; 区域，包含常用格式下拉菜单和自定义输入框&#10;（2）下拉菜单包含 txt、pdf、docx 等 20 多种常用格式&#10;（3）自定义输入框允许输入任意后缀（自动处理点号）&#10;2、交互逻辑&#10;（1）下拉菜单和自定义输入框互斥，选择一个会清空另一个&#10;（2）批量模式下，选择后缀或输入自定义后缀会自动更新预览&#10;（3）单文件模式下，提取标题后应用后缀修改规则&#10;3、文件处理逻辑&#10;（1）新增get_target_extension()方法统一处理后缀获取&#10;（2）在标题提取和批量预览生成中应用后缀修改规则&#10;（3）重命名时自动应用选定的后缀" />
+    <MESSAGE value="1、控件可见性调整&#10;（1）在create_widgets()方法中，确保标题选项框架和后缀修改框架初始化为可见&#10;（2）修改change_mode()方法，不再隐藏这两个框架，仅调整与当前模式无关的特定控件&#10;2、模式切换逻辑优化&#10;（1）仅隐藏 / 显示与当前模式直接相关的控件（如提取标题按钮）&#10;（2）保持通用选项（前缀 / 后缀 / 自动重命名 / 后缀修改）对所有模式可见&#10;3、批量模式适配&#10;（1）改进批量模式下的预览生成逻辑，确保正确应用前缀 / 后缀 / 文件格式修改" />
+    <MESSAGE value="1、预设命名格式&#10;（1）添加了下拉菜单选择常用命名模式&#10;（2）包含序号模式、日期模式、时间戳模式等 6 种预设&#10;2、序号设置&#10;（1）当选择需要序号的预设时，自动显示序号设置选项&#10;（2）可以自定义起始序号和数字位数&#10;3、整合逻辑&#10;（1）在批量重命名和单文件重命名中都应用预设格式&#10;（2）预设格式与前缀 / 后缀 / 文件后缀修改功能兼容&#10;4、预览功能&#10;（1）实时显示应用预设格式后的重命名效果&#10;（2）批量模式下自动更新所有文件的预览" />
+    <MESSAGE value="1、序号_原文件名_日期格式&#10;（1）添加了新的预设选项 &quot;序号_原文件名_日期&quot;&#10;（2）支持多种日期格式（YYYYMMDD、YYYY-MM-DD 等）&#10;2、智能识别已有格式&#10;（1）添加 &quot;忽略已符合格式的文件&quot; 选项&#10;（2）自动检测文件名是否符合 &quot;序号_原文件名_日期&quot; 格式&#10;（3）对已符合格式的文件保持不变，只处理不符合格式的文件&#10;3、自动序号管理&#10;（1）当启用 &quot;忽略已符合格式的文件&quot; 时，自动检测文件夹中已有格式文件的最大序号&#10;（2）新生成的文件名从最大序号 + 1 开始，确保序号连续性&#10;4、增强的预览功能&#10;（1）预览界面清晰显示每个文件的处理情况&#10;（2）对保持不变的文件有明确标识" />
+    <MESSAGE value="1、默认选择批量重命名的选项：&#10;（1）在__init__方法中，将self.current_mode初始化为&quot;batch&quot;。&#10;（2）在创建Radiobutton时，将self.mode_var的初始值设置为&quot;batch&quot;。&#10;2、批量重命名下使用预设的时候，数字位数默认为 2 位：&#10;（1）在创建self.digits_var时，将其初始值设置为2。&#10;3、修改数字位数和起始序号后，重命名预览框需要立即更新：&#10;（1）为起始序号和数字位数的输入框绑定&lt;KeyRelease&gt;事件，当输入框内容发生变化时，调用on_numbering_change方法。&#10;（2）在on_numbering_change方法中，如果当前模式为批量重命名且已选择文件夹路径，则重新生成批量重命名预览。&#10;4、日期格式变化时实时更新预览：&#10;（1）为日期格式下拉菜单添加了&lt;&lt;ComboboxSelected&gt;&gt;事件绑定，调用on_date_format_change方法。&#10;（2）在on_date_format_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。&#10;5、&quot;忽略已符合格式的文件&quot; 选项变化时实时更新预览：&#10;（1）为 &quot;忽略已符合格式的文件&quot; 复选框添加了command事件绑定，调用on_ignore_existing_change方法。&#10;（2）在on_ignore_existing_change方法中，如果当前是批量模式且已选择文件夹路径，则重新生成预览。" />
+    <MESSAGE value="1、添加取消预设格式选项；&#10;2、添加预览窗口随意更改顺序功能。" />
+    <MESSAGE value="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明" />
+    <option name="LAST_COMMIT_MESSAGE" value="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1748960914820" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

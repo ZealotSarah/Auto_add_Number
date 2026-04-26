@@ -3,7 +3,6 @@ import re
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, scrolledtext
-from pathlib import Path
 from datetime import datetime
 import docx
 from PyPDF2 import PdfReader
