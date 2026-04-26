@@ -37,6 +37,8 @@ class FileRenameApp:
 
         # 创建界面元素
         self.create_widgets()
+        # 绑定 F5 快捷键刷新
+        self.root.bind('<F5>', lambda e: self.refresh_folder() if self.current_mode == "batch" else None)
         print("[INFO] 界面初始化完成")
 
     def create_widgets(self):
@@ -76,6 +78,11 @@ class FileRenameApp:
         self.file_btn = tk.Button(path_frame, text="浏览文件", font=self.font,
                                   command=self.browse_file)
         self.file_btn.pack(side=tk.LEFT, padx=5)
+
+        # 👇 新增：刷新文件夹按钮
+        self.refresh_btn = tk.Button(path_frame, text="刷新文件夹", font=self.font,
+                                     command=self.refresh_folder, state=tk.DISABLED)
+        self.refresh_btn.pack(side=tk.LEFT, padx=5)
 
         self.mode_label = tk.Label(path_frame, text="批量处理模式", font=self.font, fg="blue")
         self.mode_label.pack(side=tk.LEFT, padx=10)
@@ -292,6 +299,22 @@ class FileRenameApp:
         self.change_mode()
         print("[INFO] 界面组件加载完成")
 
+    def refresh_folder(self):
+        """刷新当前文件夹的文件列表与预览"""
+        folder_path = self.path_entry.get().strip()
+        if not folder_path:
+            messagebox.showwarning("提示", "请先选择或输入文件夹路径")
+            return
+        if not os.path.isdir(folder_path):
+            messagebox.showerror("错误", "路径无效或不是文件夹，请重新选择")
+            return
+
+        self.status_var.set("正在刷新文件夹...")
+        self.root.update_idletasks()
+        self.show_batch_files(folder_path)
+        self.status_var.set(f"已刷新文件夹: {os.path.basename(folder_path)}")
+        print(f"[INFO] 文件夹刷新完成: {folder_path}")
+
     def on_drag_start(self, event):
         """开始拖动"""
         widget = event.widget
@@ -341,6 +364,12 @@ class FileRenameApp:
     def change_mode(self):
         self.current_mode = self.mode_var.get()
         print(f"[INFO] 切换到{self.current_mode}模式")
+
+        # 👇 根据模式控制刷新按钮状态
+        if self.current_mode == "batch":
+            self.refresh_btn.config(state=tk.NORMAL)
+        else:
+            self.refresh_btn.config(state=tk.DISABLED)
 
         if self.current_mode == "batch":
             self.is_single_file = False

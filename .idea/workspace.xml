@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="初始化上传项目">
+    <list default="true" id="0dbfa7ab-f647-41e4-b10e-5effe03fbd2e" name="更改" comment="删除readme">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,12 +27,12 @@
     &quot;assignee&quot;: &quot;ZealotSarah&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/ZealotSarah/Auto_add_Number.git",
-    "accountId": "67ad8e82-2b67-494f-9878-5a83c63130b3"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ZealotSarah/Auto_add_Number.git&quot;,
+    &quot;accountId&quot;: &quot;67ad8e82-2b67-494f-9878-5a83c63130b3&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -122,7 +122,8 @@
       <workItem from="1763381159659" duration="3497000" />
       <workItem from="1764766738090" duration="76000" />
       <workItem from="1777192433998" duration="3196000" />
-      <workItem from="1777196096742" duration="1266000" />
+      <workItem from="1777196096742" duration="1442000" />
+      <workItem from="1777197564125" duration="1302000" />
     </task>
     <task id="LOCAL-00001" summary="1、双模式支持：&#10;新增 &quot;浏览文件&quot; 按钮，支持选择单个文件&#10;界面顶部显示当前模式（批量处理 / 单个文件）&#10;通过is_single_file标志区分两种模式&#10;2、界面调整：&#10;将 &quot;文件夹路径&quot; 改为 &quot;文件 / 文件夹路径&quot;&#10;添加 &quot;浏览文件&quot; 按钮，与 &quot;浏览文件夹&quot; 并列&#10;增加模式指示器，显示当前操作模式&#10;3、逻辑修改：&#10;preview_rename和execute_rename方法同时支持文件和文件夹">
       <option name="closed" value="true" />
@@ -244,7 +245,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777195506045</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="删除readme">
+      <option name="closed" value="true" />
+      <created>1777197423629</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1777197423629</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -288,7 +297,8 @@
     <MESSAGE value="1、添加取消预设格式选项；&#10;2、添加预览窗口随意更改顺序功能。" />
     <MESSAGE value="1、隐藏隐藏文件功能：&#10;新增 is_hidden_file() 方法检测隐藏文件&#10;Unix风格：检查以点开头的文件（如 .gitignore）&#10;Windows风格：检查文件隐藏属性&#10;在 show_batch_files() 中过滤隐藏文件&#10;在文件列表显示和重命名操作中自动跳过隐藏文件&#10;2、文件打开检测功能：&#10;新增 &quot;检查已打开的文件&quot; 复选框（默认启用）&#10;新增 is_file_open() 方法检测文件是否被其他程序占用&#10;在重命名前检查文件状态，如果文件被打开则提示用户&#10;提供友好的错误提示，指导用户关闭文件后再操作&#10;添加了psutil依赖检查，提供安装提示&#10;3、界面优化：&#10;将&quot;检查已打开的文件&quot;选项添加到日期格式设置框架&#10;优化了状态提示信息，更清晰地显示操作状态&#10;重命名失败时提供更详细的错误信息&#10;4、错误处理增强：&#10;在文件操作前增加更多状态检查&#10;捕获更多可能的异常情况&#10;提供更友好的用户提示&#10;5、添加Readme文件说明" />
     <MESSAGE value="初始化上传项目" />
-    <option name="LAST_COMMIT_MESSAGE" value="初始化上传项目" />
+    <MESSAGE value="删除readme" />
+    <option name="LAST_COMMIT_MESSAGE" value="删除readme" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1748960914820" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
