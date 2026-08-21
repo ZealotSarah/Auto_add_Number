@@ -8,7 +8,6 @@ import docx
 from PyPDF2 import PdfReader
 import traceback
 import platform
-import psutil  # 新增依赖，用于检测文件是否被打开
 
 
 def resource_path(relative_path):
@@ -435,6 +434,8 @@ class FileRenameApp:
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
+        elif self.current_mode == "single" and self.path_entry.get():
+            self.generate_single_preview(self.path_entry.get())
 
     def on_numbering_change(self, event=None):
         """起始序号或数字位数变化时的处理"""
@@ -442,6 +443,8 @@ class FileRenameApp:
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
+        elif self.current_mode == "single" and self.path_entry.get():
+            self.generate_single_preview(self.path_entry.get())
 
     def on_date_format_change(self, event=None):
         """日期格式变化时的处理"""
@@ -449,6 +452,8 @@ class FileRenameApp:
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
+        elif self.current_mode == "single" and self.path_entry.get():
+            self.generate_single_preview(self.path_entry.get())
 
     def on_ignore_existing_change(self):
         """忽略已符合格式的文件选项变化时的处理"""
@@ -507,8 +512,8 @@ class FileRenameApp:
         print("[INFO] 打开文件选择对话框")
         if self.current_mode == "title":
             file_selected = filedialog.askopenfilename(
-                filetypes=[("Word/PDF文件", "*.docx *.doc *.pdf"),
-                           ("Word文件", "*.docx *.doc"),
+                filetypes=[("Word/PDF文件", "*.docx *.pdf"),
+                           ("Word文件", "*.docx"),
                            ("PDF文件", "*.pdf"),
                            ("所有文件", "*.*")]
             )
@@ -522,6 +527,8 @@ class FileRenameApp:
             self.path_entry.insert(0, file_selected)
             self.status_var.set(f"已选择文件: {os.path.basename(file_selected)}")
             print(f"[INFO] 选择文件: {file_selected}")
+            if self.current_mode == "single":
+                self.generate_single_preview(file_selected)
 
     def show_batch_files(self, folder_path):
         """显示批量模式下的文件列表，过滤隐藏文件"""
@@ -539,11 +546,8 @@ class FileRenameApp:
                 self.original_files_listbox.insert(tk.END, "所选文件夹为空")
                 return
 
-            for file in self.file_list[:100]:
+            for file in self.file_list:
                 self.original_files_listbox.insert(tk.END, file)
-
-            if len(self.file_list) > 100:
-                self.original_files_listbox.insert(tk.END, f"... 共{len(self.file_list)}个文件")
 
             # 自动生成预览
             self.generate_batch_preview(self.file_list, folder_path)
@@ -669,6 +673,49 @@ class FileRenameApp:
         self.remove_format_btn.config(state=tk.NORMAL if renamed_files else tk.DISABLED)
         print(f"[INFO] 生成批量重命名预览，{len(renamed_files)}个文件")
 
+    def generate_single_preview(self, file_path):
+        """生成单个文件重命名预览"""
+        if not os.path.isfile(file_path):
+            return
+
+        filename = os.path.basename(file_path)
+        base_name, ext = os.path.splitext(filename)
+        preset = self.preset_var.get()
+        prefix = self.title_prefix_var.get().strip()
+        suffix = self.title_suffix_var.get().strip()
+        target_ext = self.get_target_extension()
+        current_date = datetime.now().strftime(self.parse_date_format(self.date_format_var.get()))
+        seq_num = self.start_num_var.get()
+        digits = self.digits_var.get()
+
+        if preset == "序号模式 (001, 002...)":
+            new_base_name = f"{seq_num:0{digits}d}"
+        elif preset == "日期模式 (YYYYMMDD)":
+            new_base_name = current_date
+        elif preset == "时间戳模式 (YYYYMMDD_HHMMSS)":
+            new_base_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+        elif preset == "序号+原文件名":
+            new_base_name = f"{seq_num:0{digits}d}_{base_name}"
+        elif preset == "日期+原文件名":
+            new_base_name = f"{current_date}_{base_name}"
+        elif preset == "原文件名+序号":
+            new_base_name = f"{base_name}_{seq_num:0{digits}d}"
+        elif preset == "序号_原文件名_日期":
+            new_base_name = f"{seq_num:0{digits}d}_{base_name}_{current_date}"
+        else:
+            new_base_name = base_name
+
+        new_base_name = f"{prefix}{new_base_name}{suffix}"
+        new_name = new_base_name + (f".{target_ext}" if target_ext else ext)
+
+        self.original_files_listbox.delete(0, tk.END)
+        self.original_files_listbox.insert(tk.END, filename)
+        self.preview_listbox.delete(0, tk.END)
+        self.preview_listbox.insert(tk.END, f"{filename} → {new_name}")
+        self.preview_results = [(filename, new_name)]
+        self.execute_btn.config(state=tk.NORMAL)
+        self.remove_format_btn.config(state=tk.NORMAL)
+
     def on_extension_change(self, event=None):
         """下拉菜单选择变化时的处理"""
         selected = self.extension_var.get()
@@ -679,6 +726,8 @@ class FileRenameApp:
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
+        elif self.current_mode == "single" and self.path_entry.get():
+            self.generate_single_preview(self.path_entry.get())
 
     def on_custom_ext_change(self, event=None):
         """自定义后缀输入变化时的处理"""
@@ -690,6 +739,8 @@ class FileRenameApp:
             folder_path = self.path_entry.get()
             if os.path.isdir(folder_path):
                 self.generate_batch_preview(self.file_list, folder_path)
+        elif self.current_mode == "single" and self.path_entry.get():
+            self.generate_single_preview(self.path_entry.get())
 
     def get_target_extension(self):
         """获取目标文件后缀"""
@@ -816,7 +867,7 @@ class FileRenameApp:
             self.status_var.set(f"正在提取标题: {filename}")
             print(f"[INFO] 开始提取标题流程: {filename}")
 
-            if file_ext in ['.docx', '.doc']:
+            if file_ext == '.docx':
                 title = self.extract_title_from_docx(file_path)
             elif file_ext == '.pdf':
                 title = self.extract_title_from_pdf(file_path)
@@ -910,30 +961,44 @@ class FileRenameApp:
         except IOError:
             return True
 
+    def validate_rename_plan(self, folder_path, rename_plan):
+        """确认重命名计划没有重复目标或覆盖已有文件"""
+        targets = {}
+        errors = []
+
+        for old_name, new_name in rename_plan:
+            if old_name == new_name:
+                continue
+
+            target_key = os.path.normcase(new_name)
+            if target_key in targets:
+                errors.append(f"{new_name}（同时由 {targets[target_key]} 和 {old_name} 生成）")
+            else:
+                targets[target_key] = old_name
+
+            if os.path.exists(os.path.join(folder_path, new_name)):
+                errors.append(f"{new_name}（目标已存在）")
+
+        if errors:
+            unique_errors = list(dict.fromkeys(errors))
+            messagebox.showerror("无法执行重命名", "检测到命名冲突，未执行任何操作:\n" + "\n".join(unique_errors))
+            self.status_var.set("重命名已取消：命名冲突")
+            return False
+
+        return True
+
     def execute_rename(self):
         if not self.preview_results:
             messagebox.showinfo("提示", "没有可执行的重命名操作")
             print("[INFO] 没有可执行的重命名操作")
             return
 
-        # 检查是否有文件被打开
-        open_files = []
-        if self.open_files_check_var.get():
-            for old_name, new_name in self.preview_results:
-                if self.current_mode == "batch":
-                    file_path = os.path.join(self.path_entry.get(), old_name)
-                else:
-                    file_path = self.path_entry.get()
-
-                if self.is_file_open(file_path):
-                    open_files.append(old_name)
-
-            if open_files:
-                msg = "以下文件正在被其他程序使用，重命名可能会失败:\n" + "\n".join(open_files)
-                msg += "\n\n请关闭这些文件后再尝试重命名，是否继续?"
-                if not messagebox.askyesno("文件正在使用", msg):
-                    self.status_var.set("操作已取消")
-                    return
+        # 单文件和标题模式保留原有的占用文件确认；批量模式逐项跳过占用文件。
+        if self.current_mode != "batch" and self.is_file_open(self.path_entry.get()):
+            msg = "该文件正在被其他程序使用，重命名可能会失败。\n\n是否继续?"
+            if not messagebox.askyesno("文件正在使用", msg):
+                self.status_var.set("操作已取消")
+                return
 
         try:
             if self.current_mode == "batch":
@@ -941,8 +1006,11 @@ class FileRenameApp:
                 if not os.path.isdir(folder_path):
                     messagebox.showerror("错误", "请选择有效的文件夹路径")
                     return
+                if not self.validate_rename_plan(folder_path, self.preview_results):
+                    return
 
                 renamed_count = 0
+                skipped_files = []
                 failed_files = []
 
                 for old_name, new_name in self.preview_results:
@@ -950,6 +1018,11 @@ class FileRenameApp:
                     new_path = os.path.join(folder_path, new_name)
 
                     if old_name == new_name:
+                        continue
+
+                    if self.is_file_open(old_path):
+                        skipped_files.append(old_name)
+                        print(f"[INFO] 跳过正在使用的文件: {old_name}")
                         continue
 
                     try:
@@ -960,13 +1033,26 @@ class FileRenameApp:
                         failed_files.append((old_name, str(e)))
                         print(f"[ERROR] 重命名失败: {old_name}, 错误信息: {str(e)}")
 
-                if renamed_count > 0:
-                    messagebox.showinfo("提示", f"{renamed_count}个文件重命名成功")
+                result_lines = [
+                    f"成功：{renamed_count} 个",
+                    f"跳过（正在使用）：{len(skipped_files)} 个",
+                    f"失败：{len(failed_files)} 个",
+                ]
+                if skipped_files:
+                    result_lines.append("\n跳过的文件:\n" + "\n".join(skipped_files))
                 if failed_files:
                     error_msg = "\n".join([f"{old_name}: {error}" for old_name, error in failed_files])
-                    messagebox.showerror("错误", f"以下文件重命名失败:\n{error_msg}")
+                    result_lines.append("\n失败的文件:\n" + error_msg)
 
-                self.status_var.set("重命名完成")
+                result_message = "\n".join(result_lines)
+                if failed_files:
+                    messagebox.showerror("批量重命名完成", result_message)
+                else:
+                    messagebox.showinfo("批量重命名完成", result_message)
+
+                self.status_var.set(
+                    f"重命名完成：成功{renamed_count}个，跳过{len(skipped_files)}个，失败{len(failed_files)}个"
+                )
                 self.show_batch_files(folder_path)
                 self.preview_results = []
                 self.execute_btn.config(state=tk.DISABLED)
@@ -977,6 +1063,9 @@ class FileRenameApp:
                 old_name = os.path.basename(old_path)
                 new_name = self.preview_results[0][1]
                 new_path = os.path.join(os.path.dirname(old_path), new_name)
+
+                if not self.validate_rename_plan(os.path.dirname(old_path), [(old_name, new_name)]):
+                    return
 
                 try:
                     os.rename(old_path, new_path)
@@ -1079,13 +1168,6 @@ class FileRenameApp:
 
 if __name__ == "__main__":
     print("[INFO] 程序启动中...")
-
-    # 检查psutil依赖
-    try:
-        import psutil
-    except ImportError:
-        print("[WARNING] 未安装psutil库，文件打开检测功能将受限")
-        print("请安装依赖: pip install psutil")
 
     root = tk.Tk()
     app = FileRenameApp(root)
